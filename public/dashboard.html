@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-light bg-light px-4">
+  <span class="navbar-brand">Dashboard</span>
+  <button class="btn btn-danger" onclick="logout()">Logout</button>
+</nav>
+
+<div class="container py-5 text-center">
+  <h1>Welcome to Your Dashboard</h1>
+  <p id="userEmail"></p>
+</div>
+
+<script>
+async function loadUser() {
+  const token = localStorage.getItem("token");
+  if (!token) return window.location.href = "login.html";
+
+  const res = await fetch("/api/user", {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+  document.getElementById("userEmail").innerText = "Logged in as: " + data.email;
+}
+
+function logout() {
+  localStorage.removeItem("token");
+  window.location.href = "login.html";
+}
+
+loadUser();
+</script>
+
+</body>
+</html>
