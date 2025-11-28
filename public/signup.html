@@ -22,6 +22,43 @@
       <input type="password" id="password" class="form-control" required>
     </div>
 
+    <div class="row">
+      <div class="mb-3 col-md-6">
+        <label>First Name</label>
+        <input type="text" id="first_name" class="form-control" required>
+      </div>
+      <div class="mb-3 col-md-6">
+        <label>Last Name</label>
+        <input type="text" id="last_name" class="form-control" required>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label>Country</label>
+      <input type="text" id="country" class="form-control" required>
+    </div>
+
+    <div class="row">
+      <div class="mb-3 col-md-6">
+        <label>State</label>
+        <input type="text" id="state" class="form-control" required>
+      </div>
+      <div class="mb-3 col-md-6">
+        <label>House Number</label>
+        <input type="text" id="house_number" class="form-control" required>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label>Street</label>
+      <input type="text" id="street" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label>Full Address</label>
+      <textarea id="full_address" class="form-control" rows="2" required></textarea>
+    </div>
+
     <button class="btn btn-primary w-100">Create Account</button>
   </form>
 
@@ -37,11 +74,18 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
 
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
+  const first_name = document.getElementById("first_name").value;
+  const last_name = document.getElementById("last_name").value;
+  const state = document.getElementById("state").value;
+  const country = document.getElementById("country").value;
+  const street = document.getElementById("street").value;
+  const house_number = document.getElementById("house_number").value;
+  const full_address = document.getElementById("full_address").value;
 
   const res = await fetch("/api/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password, first_name, last_name, state, country, street, house_number, full_address })
   });
 
   const data = await res.json();
