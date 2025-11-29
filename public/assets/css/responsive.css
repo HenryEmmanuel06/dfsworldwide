@@ -95,6 +95,204 @@
     margin-top: 0px;
 }
 }
+@media (max-width: 992px) {
+  .footer_social{
+  display: none;
+}
+.footer_social_mobile{
+  display: flex;
+}
+.mission_card{
+  padding-left: 50px;
+}
+.vision_card{
+  padding-right: 50px;
+}
+/* ensure sticky works well on desktop */
+  .contact_page .row{ align-items: flex-start; }
+  .sticky-col{ top: 80px; }
+}
+
+@media (max-width: 768px) {
+  .hero .swiper {
+    height: 75vh;
+  }
+:root {
+    --primary-color: #0093D4;
+    --secondary-color: #B9E8FE;
+    --tertiary-color: #07314A;
+    --white-color: #FFFFFF;
+    --black-color: #000000;
+
+
+    /* font-size */
+    --fs-h1: 24px;
+    --fs-h2: 24px;
+    --fs-h3: 28px;
+    --fs-h4: 18px;
+    --fs-body: 14px;
+}
+  .hero-title {
+font-weight: 700;
+line-height: 30px;
+letter-spacing: 0px;
+text-align: center;
+max-width: 350px;
+margin: 0 auto;
+  }
+
+  .hero-subtitle {
+    font-size: 14px;
+    text-align: center;
+    max-width: 350px;
+margin: 0 auto;
+margin-top: 10px;
+line-height: 24px;
+  }
+.hero-cta{
+  justify-content: center;
+}
+  .hero_btn_1{
+    padding: 12px 10px;
+    align-items: center;
+  }
+  .hero_btn_2{
+    padding: 12px 30px;
+  }
+  .hero_btn_1 img{
+    width: 35px;
+  }
+  .hero-pagination {
+    bottom: 90px !important;
+}
+  .ratings_img{
+    width: 50px;
+    height: 50px;
+  }
+  .ratings_title{
+    font-size: 24px;
+  }
+  .logo a img{
+    width: 170px;
+  }
+  .footer_logo{
+    width: 280px;
+  }
+  .ratings_subtitle{
+    font-size: 12px;
+  }
+
+  .customized_h4 {
+    font-weight: 700;
+    font-size: var(--fs-h4);
+    line-height: 100%;
+    text-transform: capitalize;
+}
+
+.customized_h2 {
+    font-weight: 700;
+    font-size: var(--fs-h2);
+    line-height: 40px;
+}
+.contact_us_text{
+  font-size: 14px;
+}
+.services_card_title{
+  font-size: 20px;
+}
+.site_footer{
+  font-size: 14px;
+}
+.footer_title{
+  font-size: 16px;
+}
+.inner_banner{
+  height: 250px;
+}
+.inner_banner_title{
+  font-size: 24px;
+}
+.inner_banner_subtitle{
+  font-size: 16px;
+  line-height: 20px;
+}
+.about{
+  padding: 40px 0;
+}
+.about_text{
+  font-size: 14px;
+}
+.vision_mission_cards{
+  flex-direction: column;
+  justify-content: center;
+
+}
+.mission_card{
+  padding-left: 0px;
+  width: 100%;
+  padding-top: 50px;
+
+}
+.vision_card{
+  padding-right: 0px;
+  padding-bottom: 50px;
+  width: 100%;
+border-right: none;
+border-bottom: 4px solid var(--tertiary-color);
+}
+.vision_mission_cards .text{
+  font-size: 14px;
+}
+.value_card_title{
+  font-size: 16px;
+}
+.value_card_text{
+  font-size: 14px;
+}
+.choose_title{
+  font-size: 32px;
+}
+.inner_footer_title{
+  font-size: 24px;
+  line-height: 32px;
+}
+.services_page_subtitle{
+font-size: 14px;
+line-height: 30px;
+margin-top: 0px;
+}
+.service_div_card{
+  margin-top: 30px;
+  padding: 32px 10px;
+}
+.service_div_content_title{
+font-size: 24px;
+line-height: 30px;
+}
+.service_div_content_text{
+  margin: 0;
+  font-size: 14px;
+}
+.project-overlay{
+  padding: 10px;
+}
+.project-caption{
+  font-size: 14px;
+  line-height: 20px;
+}
+.projects_page{
+  padding: 35px 0;
+}
+.contact_info_text{
+  font-size: 14px;
+}
+.info_body, .hours_list li{
+  font-size: 14px;
+}
+.footer_social_mobile{
+  flex-direction: column;
+}
+}
 @media (max-width: 768px) {
 .hero-content{
     margin-top: 100px;
