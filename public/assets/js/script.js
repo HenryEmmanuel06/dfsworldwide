@@ -1,6 +1,4 @@
-
-
- document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
   var header = document.querySelector('header');
   var toggle = document.querySelector('.menu_toggle');
   var nav = document.getElementById('primary-nav');
@@ -52,4 +50,36 @@
   if (mq.addEventListener) mq.addEventListener('change', handleResize);
   else mq.onchange = handleResize;
   window.addEventListener('resize', handleResize);
+
+  // Tracking search form (home hero)
+  try {
+    var forms = document.querySelectorAll('.tracking-search');
+    if (forms && forms.length) {
+      var focusCount = 0;
+      forms.forEach(function (searchForm) {
+        var input = searchForm.querySelector('input[type="text"]');
+        if (input) {
+          input.addEventListener('focus', function () {
+            focusCount++;
+            if (window.heroSwiper && window.heroSwiper.autoplay && focusCount === 1) {
+              try { window.heroSwiper.autoplay.stop(); } catch (e) { /* no-op */ }
+            }
+          });
+          input.addEventListener('blur', function () {
+            focusCount = Math.max(0, focusCount - 1);
+            if (window.heroSwiper && window.heroSwiper.autoplay && focusCount === 0) {
+              try { window.heroSwiper.autoplay.start(); } catch (e) { /* no-op */ }
+            }
+          });
+        }
+        searchForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var tid = (input ? input.value : '').trim();
+          if (!tid) { if (input) input.focus(); return; }
+          // Redirect to tracking page with query param; case-insensitive lookup handled server-side
+          window.location.href = 'tracking.html?tid=' + encodeURIComponent(tid);
+        });
+      });
+    }
+  } catch (err) { /* no-op */ }
 });

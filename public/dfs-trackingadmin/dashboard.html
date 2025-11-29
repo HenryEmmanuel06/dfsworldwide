@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DFS Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .card{ max-width: 720px; margin:auto; }
+    .code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-light bg-light">
+    <div class="container">
+      <span class="navbar-brand mb-0 h1"><img style="width: 200px;" src="../assets/images/dfs-worldwide-logo.webp" alt="DFS Logo"></span>
+      <div>
+        <span id="adminEmail" class="me-3 text-muted small"></span>
+        <button id="logoutBtn" class="btn btn-outline-secondary btn-sm">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-5">
+    <div class="card shadow">
+      <div class="card-body">
+        <h1 class="h4 mb-3">Create Tracking ID</h1>
+        <p class="text-muted small">Click the button to open the form. All fields are required. After submission a tracking ID will be generated.</p>
+        <button id="openModalBtn" class="btn" style="background-color: #ffc107;" type="button">Get Tracking ID</button>
+        <div id="result" class="alert d-none mt-3"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Tracking Modal -->
+  <div class="modal fade" id="trackingModal" tabindex="-1" aria-labelledby="trackingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="trackingModalLabel">Create Tracking</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="trackingModalForm" class="needs-validation" novalidate>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">From</label>
+                <input type="text" class="form-control" id="from" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">To</label>
+                <input type="text" class="form-control" id="to" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Port 1</label>
+                <input type="text" class="form-control" id="port1" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Port 2</label>
+                <input type="text" class="form-control" id="port2" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Port 3</label>
+                <input type="text" class="form-control" id="port3" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Port 4</label>
+                <input type="text" class="form-control" id="port4" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Status</label>
+                <input type="text" class="form-control" id="status" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Delivery date</label>
+                <input type="date" class="form-control" id="delivery_date" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Recipient name</label>
+                <input type="text" class="form-control" id="recipient_name" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Recipient address</label>
+                <input type="text" class="form-control" id="recipient_address" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Recipient email</label>
+                <input type="email" class="form-control" id="recipient_email" required>
+                <div class="invalid-feedback">Valid email required.</div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Status message</label>
+                <textarea class="form-control" id="status_message" rows="3" required></textarea>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" id="submitTrackingBtn" class="btn" style="background-color: #ffc107;">Generate Tracking ID</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  (function(){
+    const LOGIN_URL = '/dfs-trackingadmin/';
+    const ADMIN_EMAIL = 'dfsworldwide.info@gmail.com';
+
+    function logout(){
+      localStorage.removeItem('admin_token');
+      window.location.replace(LOGIN_URL);
+    }
+
+    async function requireSession(){
+      const token = localStorage.getItem('admin_token');
+      if(!token) return logout();
+      try{
+        const res = await fetch('/api/user', { headers: { Authorization: 'Bearer ' + token }});
+        if(!res.ok) return logout();
+        const data = await res.json();
+        if(!data.email || data.email.toLowerCase() !== ADMIN_EMAIL) return logout();
+        document.getElementById('adminEmail').textContent = data.email;
+        return token;
+      }catch(err){ return logout(); }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    const openBtn = document.getElementById('openModalBtn');
+    const modalEl = document.getElementById('trackingModal');
+    const modal = new bootstrap.Modal(modalEl);
+    openBtn.addEventListener('click', ()=> modal.show());
+
+    const form = document.getElementById('trackingModalForm');
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!form.checkValidity()){
+        form.classList.add('was-validated');
+        return;
+      }
+      const token = await requireSession();
+      if(!token) return; // redirected
+      const resEl = document.getElementById('result');
+      resEl.className = 'alert d-none';
+      const btn = document.getElementById('submitTrackingBtn');
+      btn.disabled = true;
+      const original = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Generating...';
+
+      const payload = {
+        from: document.getElementById('from').value.trim(),
+        to: document.getElementById('to').value.trim(),
+        port1: document.getElementById('port1').value.trim(),
+        port2: document.getElementById('port2').value.trim(),
+        port3: document.getElementById('port3').value.trim(),
+        port4: document.getElementById('port4').value.trim(),
+        status: document.getElementById('status').value.trim(),
+        status_message: document.getElementById('status_message').value.trim(),
+        recipient_name: document.getElementById('recipient_name').value.trim(),
+        recipient_address: document.getElementById('recipient_address').value.trim(),
+        recipient_email: document.getElementById('recipient_email').value.trim(),
+        delivery_date: document.getElementById('delivery_date').value
+      };
+
+      try{
+        const res = await fetch('/api/tracking', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){
+          resEl.className='alert alert-danger';
+          resEl.textContent = data.error || 'Failed to create tracking ID';
+          return;
+        }
+        modal.hide();
+        // success message
+        resEl.innerHTML = '';
+        resEl.className = 'mt-3 alert alert-success';
+        const label = document.createElement('span');
+        label.textContent = 'Tracking ID created: ';
+        const strong = document.createElement('strong');
+        strong.className = 'code';
+        strong.textContent = data.tracking_id;
+        resEl.append(label, strong);
+        if(data.warning){
+          const small = document.createElement('div');
+          small.className = 'small text-warning mt-1';
+          small.textContent = 'Note: Not persisted to DB - ' + data.warning;
+          resEl.appendChild(small);
+        }
+        form.reset();
+        form.classList.remove('was-validated');
+      }catch(err){
+        resEl.className='alert alert-danger';
+        resEl.textContent = 'Network error';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    });
+
+    // initial auth check
+    requireSession();
+  })();
+  </script>
+</body>
+</html>

@@ -74,6 +74,7 @@
                     }
                 }
             });
+            window.heroSwiper = swiper;
 
             var ratings = document.querySelector('.ratings_container');
             if (ratings) {

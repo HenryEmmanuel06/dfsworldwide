@@ -15,7 +15,9 @@
     --fs-h4: 20px;
     --fs-body: 16px;
 }
-
+.modal-dialog-scrollable .modal-content{
+    overflow-y: auto !important;
+}
 
 * {
     margin: 0;
@@ -64,6 +66,7 @@ header {
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
+    padding-bottom: 7px;
 }
 
 .menu_toggle {
@@ -302,7 +305,7 @@ nav ul li .nav_link {
 .freight-options-section .container{
     position: relative;
     z-index: 1;
-    margin-top: 100px;
+    margin-top: 250px;
 }
 .freight-title{
     color: #e9ecef;
@@ -331,3 +334,39 @@ nav ul li .nav_link {
     text-decoration: underline;
 }
 .option-link:hover{ color: #ffffff; }
+
+.tracking-search{
+    margin-top: 30px;
+    max-width: 470px;
+}
+.tracking-search input{
+    padding: 15px 15px;
+}
+
+.site-footer{
+    position: relative;
+    color: #e9ecef;
+    padding: 40px 0;
+    margin-top: 100px;
+}
+.site-footer::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+}
+.site-footer .main_container{ position: relative; z-index: 1; }
+.footer-address p{ margin-bottom: 10px; }
+.site-footer a{ color: #e9ecef; text-decoration: underline; }
+.site-footer a:hover{ color: #ffffff; }
+.footer-hours ul{ margin: 0; padding: 0; list-style: none; }
+.footer-hours li{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.35);
+}
+.footer-logos-img{ max-width: 360px; width: 100%; height: auto; }
+.footer-specialist{ margin-top: 6px; font-size: 14px; opacity: 0.9; }
