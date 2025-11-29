@@ -104,9 +104,20 @@
                 <div class="invalid-feedback">Valid email required.</div>
               </div>
 
+              <div class="col-md-6">
+                <label class="form-label">Sender full name</label>
+                <input type="text" class="form-control" id="sender_fullname" required>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+
               <div class="col-12">
                 <label class="form-label">Status message</label>
                 <textarea class="form-control" id="status_message" rows="3" required></textarea>
+                <div class="invalid-feedback">Required.</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Shipment description</label>
+                <textarea class="form-control" id="shipment_description" rows="3" required></textarea>
                 <div class="invalid-feedback">Required.</div>
               </div>
             </div>
@@ -176,9 +187,11 @@
         port4: document.getElementById('port4').value.trim(),
         status: document.getElementById('status').value.trim(),
         status_message: document.getElementById('status_message').value.trim(),
+        shipment_description: document.getElementById('shipment_description').value.trim(),
         recipient_name: document.getElementById('recipient_name').value.trim(),
         recipient_address: document.getElementById('recipient_address').value.trim(),
         recipient_email: document.getElementById('recipient_email').value.trim(),
+        sender_fullname: document.getElementById('sender_fullname').value.trim(),
         delivery_date: document.getElementById('delivery_date').value
       };
 

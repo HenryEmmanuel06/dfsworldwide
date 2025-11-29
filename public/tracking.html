@@ -137,11 +137,13 @@
     .est {
       color: #000;
       margin-top: 18px;
+      font-size: 14px;
+
     }
 
-    .est .date {
+    .date {
       font-weight: 700;
-      font-size: 1.25rem;
+      font-size: 20px;
       color: #000;
     }
 
@@ -287,26 +289,24 @@
               <table class="table mb-0 td-table">
                 <thead>
                   <tr>
-                    <th class="w-25">Date</th>
-                    <th class="w-25">Time</th>
-                    <th class="w-25">Pick up</th>
+                    <th class="w-25">Recipient Name</th>
+                    <th class="w-25">Shipment Description</th>
                     <th class="w-25">Shipment Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>${dateStr}</td>
-                    <td>${timeStr}</td>
-                    <td>${pickupText}</td>
-                    <td>${t.status || '—'}</td>
+                    <td>${t.recipient_name || '—'}</td>
+                    <td>${t.shipment_description || '—'}</td>
+                    <td>${t.status_message || '—'}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
         </div>
-        <div class="row align-items-center mt-3">
-          <div class="col-md">
+        <div class="d-flex align-items-center justify-content-between mt-3">
+          <div class="">
             <div class="est">Estimated delivery</div>
             <div class="date">${estStr}</div>
           </div>
