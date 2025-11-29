@@ -1,0 +1,45 @@
+@keyframes clients-marquee{
+from{ transform: translateX(0); }
+to{ transform: translateX(-50%); }
+}
+@keyframes hero-zoom {
+ from { transform: scale(1); }
+ to { transform: scale(1.08); }
+}
+
+.hero .swiper-slide.hero-slide {
+ overflow: hidden;
+}
+
+.hero .swiper-slide.hero-slide::after {
+ content: "";
+ position: absolute;
+ inset: 0;
+ background: inherit;
+ background-size: cover;
+ background-position: center center;
+ background-repeat: no-repeat;
+ transform: scale(1);
+ will-change: transform;
+ z-index: 0;
+ pointer-events: none;
+}
+
+.hero .swiper-slide-active.hero-slide::after,
+.hero .swiper-slide-duplicate-active.hero-slide::after {
+ animation: hero-zoom 5s ease-out forwards;
+}
+
+.hero .hero-slide::before {
+ z-index: 1;
+}
+
+.hero .slide-inner {
+ z-index: 2;
+}
+
+body.preloading {
+  overflow: hidden;
+}
+
+
