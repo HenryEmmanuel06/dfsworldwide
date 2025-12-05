@@ -1,5 +1,38 @@
 import { createClient } from "@supabase/supabase-js";
 
+function parseCreatedAt(tr) {
+  if (tr && tr.created_at) return new Date(tr.created_at);
+  const m = /DFS-(\d{12})-/.exec((tr && tr.tracking_id) || '');
+  if (m) {
+    const s = m[1];
+    const y = +s.slice(0,4), mo = +s.slice(4,6)-1, d = +s.slice(6,8), h = +s.slice(8,10), mi = +s.slice(10,12);
+    return new Date(y, mo, d, h, mi);
+  }
+  return null;
+}
+
+function computeStage(tr) {
+  const created = parseCreatedAt(tr);
+  let elapsedMin = 0;
+  if (created) elapsedMin = Math.max(0, (Date.now() - created.getTime())/60000);
+  let activeIndex = 0;
+  let hold = false;
+  if (elapsedMin >= 15) {
+    activeIndex = 3;
+    hold = true;
+  } else if (elapsedMin >= 10) {
+    activeIndex = 2;
+  } else if (elapsedMin >= 5) {
+    activeIndex = 1;
+  } else {
+    activeIndex = 0;
+  }
+  const progressPct = Math.min(100, Math.round((activeIndex/(4-1))*100));
+  const statusHeadline = hold ? 'On Hold' : (tr.status || 'In progress');
+  const statusMessage = hold ? 'On Hold' : (tr.status_message || 'In progress');
+  return { activeIndex, hold, progressPct, statusHeadline, statusMessage };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -19,5 +52,10 @@ export default async function handler(req, res) {
 
   if (error) return res.status(404).json({ error: 'Tracking ID not found' });
 
-  return res.status(200).json({ tracking: data });
+  const stage = computeStage(data);
+  
+  return res.status(200).json({ 
+    tracking: data,
+    stage: stage
+  });
 }
