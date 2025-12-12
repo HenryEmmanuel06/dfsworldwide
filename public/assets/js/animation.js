@@ -153,4 +153,37 @@
             setupOnceAnimate('.once-fadeInLeft', 'fadeInLeft', 0.2);
             setupOnceAnimate('.once-fadeInUp', 'fadeInUp', 0.2);
             setupOnceAnimate('.once-fadeInRight', 'fadeInRight', 0.2);
+
+            // Testimonials Swiper
+            var testimonialsSwiper = document.querySelector('.testimonials-swiper');
+            if (testimonialsSwiper) {
+                new Swiper('.testimonials-swiper', {
+                    loop: true,
+                    speed: 600,
+                    slidesPerView: 1,
+                    spaceBetween: 30,
+                    autoplay: {
+                        delay: 5000,
+                        disableOnInteraction: false
+                    },
+                    pagination: {
+                        el: '.testimonials-pagination',
+                        clickable: true
+                    },
+                    navigation: {
+                        nextEl: '.testimonials-nav-next',
+                        prevEl: '.testimonials-nav-prev'
+                    },
+                    breakpoints: {
+                        768: {
+                            slidesPerView: 2,
+                            spaceBetween: 30
+                        },
+                        992: {
+                            slidesPerView: 3,
+                            spaceBetween: 40
+                        }
+                    }
+                });
+            }
         });
