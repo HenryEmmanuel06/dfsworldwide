@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
           var tid = (input ? input.value : '').trim();
           if (!tid) { if (input) input.focus(); return; }
           // Redirect to tracking page with query param; case-insensitive lookup handled server-side
-          window.location.href = 'tracking.html?tid=' + encodeURIComponent(tid);
+          window.location.href = 'tracking?tid=' + encodeURIComponent(tid);
         });
       });
     }

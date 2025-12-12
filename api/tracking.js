@@ -105,7 +105,7 @@ export default async function handler(req, res) {
       const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
       const proto = req.headers["x-forwarded-proto"] || (host.includes("localhost") ? "http" : "https");
       const base = "https://dfsworldwide.vercel.app";
-      const trackUrl = `${base}/tracking.html?tid=${encodeURIComponent(tracking_id)}`;
+      const trackUrl = `${base}/tracking?tid=${encodeURIComponent(tracking_id)}`;
       const firstName = String(recipient_name || "").trim().split(/\s+/)[0] || "Customer";
       const prettyDate = new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
       const logoUrl = process.env.MAIL_LOGO_URL || `${base}/assets/images/logo.png`;
