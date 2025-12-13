@@ -104,12 +104,12 @@ export default async function handler(req, res) {
     try {
       const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
       const proto = req.headers["x-forwarded-proto"] || (host.includes("localhost") ? "http" : "https");
-      const base = "https://dfsworldwide.vercel.app";
+      const base = "https://dfsworldwidetracking.online";
       const trackUrl = `${base}/tracking?tid=${encodeURIComponent(tracking_id)}`;
       const firstName = String(recipient_name || "").trim().split(/\s+/)[0] || "Customer";
       const prettyDate = new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
       const logoUrl = process.env.MAIL_LOGO_URL || `${base}/assets/images/logo.png`;
-      const bannerUrl = "https://dfsworldwide.vercel.app/assets/images/mail_banner.png";
+      const bannerUrl = "https://dfsworldwidetracking.online/assets/images/mail_banner.png";
 
       const subject = `Your shipment with tracking number: ${tracking_id}`;
       const statusLine = (String(status_message || "").trim()) || "Just one more check point! your shipment arrives to you soon.";
