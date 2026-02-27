@@ -249,6 +249,95 @@
   <div class="main_container" id="content">
     <div class="alert alert-info">Enter a tracking ID to view shipment details.</div>
   </div>
+  
+  <div class="modal fade" id="feesModal" tabindex="-1" aria-labelledby="feesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="feesModalLabel">Tracking Details Summary</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600;">Courier Shipping Fee:</div>
+                <small class="text-muted">United States</small>
+              </div>
+              <div class="text-end">
+                <div style="font-weight:700;">$32.00</div>
+                <span class="badge rounded-pill text-bg-success">Paid</span>
+              </div>
+            </div>
+          </div>
+          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600;">Packaging and Handling Fee:</div>
+                <small class="text-muted">Fragile packing, handling and items.</small>
+              </div>
+              <div class="text-end">
+                <div style="font-weight:700;">$5.00</div>
+                <span class="badge rounded-pill text-bg-success">Paid</span>
+              </div>
+            </div>
+          </div>
+          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600;">Insurance:</div>
+                <small class="text-muted">Protects package lost, damaged, or delayed</small>
+              </div>
+              <div class="text-end">
+                <div style="font-weight:700;">$15.00</div>
+                <span class="badge rounded-pill text-bg-success">Paid</span>
+              </div>
+            </div>
+          </div>
+          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600;">Customs Duties & Taxes:</div>
+                <small class="text-muted">Government charges based on your items.</small>
+              </div>
+              <div class="text-end">
+                <div style="font-weight:700;">$15.00</div>
+                <span class="badge rounded-pill text-bg-danger">Not Paid</span>
+              </div>
+            </div>
+          </div>
+          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600;">Delivery Surcharges:</div>
+                <small class="text-muted">International distance coverage and deliveries</small>
+              </div>
+              <div class="text-end">
+                <div style="font-weight:700;">$5.00</div>
+                <span class="badge rounded-pill text-bg-danger">Not Paid</span>
+              </div>
+            </div>
+          </div>
+          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600;">Customs Clearance / Handling Fees:</div>
+                <small class="text-muted">Service charge on documents processing & package</small>
+              </div>
+              <div class="text-end">
+                <div style="font-weight:700;">$30.00</div>
+                <span class="badge rounded-pill text-bg-danger">Not Paid</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display:block;">
+          <a id="feesPayLink" class="btn btn-warning w-100" href="#">Make Payment</a>
+          <div class="text-center" style="margin-top:8px;color:#6b7280;font-size:12px;">Thanks for trusting dfsworldwide, all your transactions is secured & fast</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     (function () {
@@ -260,7 +349,7 @@
         const res = await fetch('/api/tracking-get?tid=' + encodeURIComponent(tid));
         return { ok: res.ok, data: await res.json() };
       }
-      function render(tracking, stage) {
+      function render(tracking, stage, trackingId) {
         const c = document.getElementById('content');
         const t = tracking || {};
         const s = stage || {};
@@ -282,6 +371,7 @@
               .map((d) => `<span class="runner" style="left:${progressPct}%;animation-delay:${d}"></span>`)
               .join('')
           : '';
+        const tidValue = trackingId || t.tracking_id || '';
 
         c.innerHTML = `
         <div class="td-card mb-3">
@@ -338,10 +428,18 @@
             <div class="date">${estStr}</div>
           </div>
           <div class="col-md td-cta mt-3 mt-md-0">
-            <a class="btn btn-outline-secondary" href="#">See more details</a>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#feesModal">See more details</button>
           </div>
         </div>
       `;
+
+        // Update persistent modal payment link outside of #content
+        try {
+          const payLink = document.getElementById('feesPayLink');
+          if (payLink) {
+            payLink.href = `../payment?tid=${encodeURIComponent(tidValue)}`;
+          }
+        } catch (_) {}
       }
       
       async function load() {
@@ -362,17 +460,18 @@
           c.innerHTML = '<div class="alert alert-danger">Tracking ID not found.</div>';
           return;
         }
-        render(data.tracking, data.stage);
+        render(data.tracking, data.stage, tid);
         if (window.__trackInterval) clearInterval(window.__trackInterval);
         window.__trackInterval = setInterval(async () => {
           const { ok, data: refreshData } = await fetchTracking(tid);
-          if (ok) render(refreshData.tracking, refreshData.stage);
+          if (ok) render(refreshData.tracking, refreshData.stage, tid);
         }, 30000);
       }
 
       load();
     })();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../assets/js/script.js"></script>
   <script src="../assets/js/animation.js"></script>
 </body>
