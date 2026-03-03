@@ -10,6 +10,16 @@
   <style>
     .card{ max-width: 720px; margin:auto; }
     .code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .email-card{ max-width: 980px; }
+    .email-preview{ border-radius:8px; padding:16px; }
+    .email-frame{ width:100%; border:0; background:transparent; }
+    .email-template{ background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.06); font-family:Arial,Helvetica,sans-serif; color:#111827; max-width:600px; margin:0 auto; }
+    .email-header{ position:relative; background:#ffffff; }
+    .email-header .bg{ width:100%; display:block; height:auto; }
+    .email-header .logo{ position:absolute; left:18px; top:14px; width:210px; max-width:60%; height:auto; }
+    .email-footer{ background:#0b0b0b; color:#ffffff; text-align:center; padding:18px; }
+    .email-footer .icons img{ width:20px; height:20px; display:block; }
+    .email-footer .icons{ display:inline-flex; gap:14px; align-items:center; justify-content:center; }
   </style>
 </head>
 <body>
@@ -30,6 +40,60 @@
         <p class="text-muted small">Click the button to open the form. All fields are required. After submission a tracking ID will be generated.</p>
         <button id="openModalBtn" class="btn" style="background-color: #ffc107;" type="button">Get Tracking ID</button>
         <div id="result" class="alert d-none mt-3"></div>
+      </div>
+    </div>
+
+    <div class="card shadow mt-4 email-card">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Send Email</h2>
+        <div class="row g-3">
+          <div class="col-lg-5">
+            <div class="mb-3">
+              <label class="form-label">Recipient email</label>
+              <input type="email" class="form-control" id="mail_to" placeholder="customer@email.com" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Subject</label>
+              <input type="text" class="form-control" id="mail_subject" placeholder="Subject" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Body</label>
+              <textarea class="form-control" id="mail_body" rows="10" placeholder="Type the email content..." required></textarea>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+              <button id="sendMailBtn" class="btn" style="background-color: #ffc107;">Send Email</button>
+              <div id="mailResult" class="small"></div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="small text-muted">Preview</div>
+            </div>
+            <div class="email-preview">
+              <div id="mailPreview" class="email-template">
+                <div class="email-header">
+                  <img class="bg" src="../assets/images/email-bg.png" alt="Header" />
+                  <img class="logo" src="../assets/images/email-logo.png" alt="Logo" />
+                </div>
+                <div style="padding:22px 24px 10px;">
+                  <div id="mailPreviewSubject" style="font-size:18px; font-weight:700; color:#0f172a; margin:0;"></div>
+                </div>
+                <div style="padding:0 24px 24px; font-size:14px; line-height:1.7; color:#111827;">
+                  <div id="mailPreviewBody"></div>
+                </div>
+                <div class="email-footer">
+                  <div style="font-size:12px; opacity:0.9; margin-bottom:12px;">Follow us on all platform for latest update</div>
+                  <div class="icons">
+                    <img src="../assets/images/akar-icons_facebook-fill.png" alt="Facebook" />
+                    <img src="../assets/images/Group.png" alt="Instagram" />
+                    <img src="../assets/images/prime_twitter.png" alt="X" />
+                    <img src="../assets/images/fa-brands_linkedin.png" alt="LinkedIn" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -225,6 +289,81 @@
       }catch(err){
         resEl.className='alert alert-danger';
         resEl.textContent = 'Network error';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    });
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+
+    function updateMailPreview(){
+      const subject = document.getElementById('mail_subject').value || '';
+      const body = document.getElementById('mail_body').value || '';
+      document.getElementById('mailPreviewSubject').textContent = subject;
+      document.getElementById('mailPreviewBody').innerHTML = escapeHtml(body).replace(/\r\n|\r|\n/g,'<br/>');
+    }
+
+    document.getElementById('mail_subject').addEventListener('input', updateMailPreview);
+    document.getElementById('mail_body').addEventListener('input', updateMailPreview);
+    updateMailPreview();
+
+    document.getElementById('sendMailBtn').addEventListener('click', async ()=>{
+      const btn = document.getElementById('sendMailBtn');
+      const result = document.getElementById('mailResult');
+      result.className = 'small';
+      result.textContent = '';
+
+      const to = document.getElementById('mail_to').value.trim();
+      const subject = document.getElementById('mail_subject').value.trim();
+      const body = document.getElementById('mail_body').value.trim();
+
+      if(!to || !/[^\s@]+@[^\s@]+\.[^\s@]+/.test(to)){
+        result.className = 'small text-danger';
+        result.textContent = 'Valid recipient email required.';
+        return;
+      }
+      if(!subject){
+        result.className = 'small text-danger';
+        result.textContent = 'Subject is required.';
+        return;
+      }
+      if(!body){
+        result.className = 'small text-danger';
+        result.textContent = 'Body is required.';
+        return;
+      }
+
+      const token = await requireSession();
+      if(!token) return;
+
+      btn.disabled = true;
+      const original = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Sending...';
+      try{
+        const res = await fetch('/api/admin-mail', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ to, subject, body })
+        });
+        const data = await res.json();
+        if(!res.ok){
+          result.className = 'small text-danger';
+          result.textContent = data.error || 'Failed to send email';
+          return;
+        }
+        result.className = 'small text-success';
+        result.textContent = 'Email sent.';
+      }catch(err){
+        result.className = 'small text-danger';
+        result.textContent = 'Network error';
       } finally {
         btn.disabled = false;
         btn.innerHTML = original;
