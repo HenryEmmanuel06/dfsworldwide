@@ -18,8 +18,8 @@ function renderBodyHtml(body) {
 
 function buildTemplate({ subject, body }) {
   const base = "https://dfsworldwidetracking.online";
-  const headerBg = `${base}/assets/images/Frame%2053.png`;
-  const headerLogo = `${base}/assets/images/Group%201000002693.png`;
+  const headerBg = `${base}/assets/images/email-bg.png`;
+  const headerLogo = `${base}/assets/images/email-logo.png`;
 
   const facebook = `${base}/assets/images/akar-icons_facebook-fill.png`;
   const twitter = `${base}/assets/images/prime_twitter.png`;
@@ -31,17 +31,42 @@ function buildTemplate({ subject, body }) {
 
   const text = `${subject || ""}\n\n${body || ""}\n\nFollow us on all platform for latest update`;
 
-  const html = `
+  const html = `<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light only" />
+  <meta name="supported-color-schemes" content="light only" />
+  <style>
+    :root { color-scheme: light only; }
+    /* Force footer black bg + white text in Gmail dark mode */
+    [data-ogsc] .dfs-footer { background-color: #0b0b0b !important; color: #ffffff !important; }
+    [data-ogsb] .dfs-footer { background-color: #0b0b0b !important; }
+    [data-ogsc] .dfs-footer-text { color: #ffffff !important; }
+    u + .dfs-email-body .dfs-footer { background-color: #0b0b0b !important; color: #ffffff !important; }
+    u + .dfs-email-body .dfs-footer-text { color: #ffffff !important; }
+    /* iOS/Apple Mail dark mode */
+    @media (prefers-color-scheme: dark) {
+      .dfs-footer { background-color: #0b0b0b !important; color: #ffffff !important; }
+      .dfs-footer-text { color: #ffffff !important; }
+    }
+  </style>
+</head>
+<body class="dfs-email-body" style="margin:0;padding:0;background:#f7f7f8;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f7f8;padding:24px 0;margin:0;">
     <tr>
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.06);overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111827;">
           <tr>
-            <td style="padding:0;">
-              <div style="position:relative;background:#ffffff;">
-                <img src="${headerBg}" alt="Header" style="width:100%;height:auto;display:block;" />
-                <img src="${headerLogo}" alt="Logo" style="position:absolute;left:18px;top:14px;width:210px;max-width:60%;height:auto;" />
-              </div>
+            <td background="${headerBg}" style="padding:0;background-image:url('${headerBg}');background-repeat:no-repeat;background-position:center top;background-size:cover;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:20px 24px 140px;">
+                    <img src="${headerLogo}" alt="Logo" style="width:210px;max-width:60%;height:auto;display:block;" />
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -58,20 +83,24 @@ function buildTemplate({ subject, body }) {
           </tr>
 
           <tr>
-            <td style="background:#0b0b0b;color:#ffffff;text-align:center;padding:18px 18px;">
-              <div style="font-size:12px; opacity:0.9; margin-bottom:12px;">Follow us on all platform for latest update</div>
-              <div style="display:inline-flex; gap:14px; align-items:center; justify-content:center;">
-                <img src="${facebook}" alt="Facebook" style="width:20px;height:20px;display:block;" />
-                <img src="${instagram}" alt="Instagram" style="width:20px;height:20px;display:block;" />
-                <img src="${twitter}" alt="X" style="width:20px;height:20px;display:block;" />
-                <img src="${linkedin}" alt="LinkedIn" style="width:20px;height:20px;display:block;" />
-              </div>
+            <td class="dfs-footer" bgcolor="#0b0b0b" style="background:#0b0b0b !important;background-color:#0b0b0b !important;color:#ffffff;text-align:center;padding:30px 18px 36px;">
+              <div class="dfs-footer-text" style="font-size:12px;color:#ffffff !important;opacity:0.9;margin-bottom:20px;">Follow us on all platform for latest update</div>
+              <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:0 16px;"><img src="${facebook}" alt="Facebook" style="width:22px;height:22px;display:block;" /></td>
+                  <td style="padding:0 16px;"><img src="${instagram}" alt="Instagram" style="width:22px;height:22px;display:block;" /></td>
+                  <td style="padding:0 16px;"><img src="${twitter}" alt="X" style="width:22px;height:22px;display:block;" /></td>
+                  <td style="padding:0 16px;"><img src="${linkedin}" alt="LinkedIn" style="width:22px;height:22px;display:block;" /></td>
+                </tr>
+              </table>
             </td>
           </tr>
         </table>
       </td>
     </tr>
-  </table>`;
+  </table>
+</body>
+</html>`;
 
   return { html, text };
 }
