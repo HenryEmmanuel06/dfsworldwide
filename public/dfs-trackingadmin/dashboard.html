@@ -20,6 +20,18 @@
     .email-footer{ background:#0b0b0b; color:#ffffff; text-align:center; padding:18px; }
     .email-footer .icons img{ width:20px; height:20px; display:block; }
     .email-footer .icons{ display:inline-flex; gap:14px; align-items:center; justify-content:center; }
+    /* Rich text editor */
+    .mail-body-editor{ min-height:210px; border:1px solid #dee2e6; border-radius:6px; padding:10px 14px; font-size:14px; line-height:1.65; outline:none; overflow-y:auto; background:#fff; cursor:text; }
+    .mail-body-editor:empty::before{ content:attr(data-placeholder); color:#9ca3af; pointer-events:none; display:block; }
+    .mail-body-editor:focus{ border-color:#86b7fe; box-shadow:0 0 0 0.25rem rgba(13,110,253,.25); }
+    /* Floating toolbar */
+    #rte-toolbar{ display:none; position:fixed; z-index:9999; background:#1e293b; border-radius:9px; padding:5px 8px; box-shadow:0 6px 20px rgba(0,0,0,0.35); align-items:center; gap:2px; }
+    #rte-toolbar button{ background:transparent; border:none; color:#e2e8f0; padding:4px 9px; border-radius:5px; cursor:pointer; font-size:13px; font-weight:600; transition:background .15s; white-space:nowrap; }
+    #rte-toolbar button:hover{ background:rgba(255,255,255,0.15); }
+    #rte-toolbar .tb-sep{ width:1px; height:18px; background:rgba(255,255,255,0.2); margin:0 3px; flex-shrink:0; }
+    #rte-toolbar label.color-wrap{ display:flex; align-items:center; padding:2px 6px; border-radius:5px; cursor:pointer; gap:4px; color:#e2e8f0; font-size:12px; }
+    #rte-toolbar label.color-wrap:hover{ background:rgba(255,255,255,0.15); }
+    #rte-toolbar input[type=color]{ width:18px; height:18px; border:none; border-radius:3px; cursor:pointer; padding:0; background:none; }
   </style>
 </head>
 <body>
@@ -58,7 +70,7 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Body</label>
-              <textarea class="form-control" id="mail_body" rows="10" placeholder="Type the email content..." required></textarea>
+              <div class="mail-body-editor" id="mail_body" contenteditable="true" data-placeholder="Type the email content..."></div>
             </div>
             <div class="d-flex gap-2 align-items-center">
               <button id="sendMailBtn" class="btn" style="background-color: #ffc107;">Send Email</button>
@@ -196,6 +208,27 @@
     </div>
   </div>
 
+  <!-- Floating rich-text toolbar -->
+  <div id="rte-toolbar">
+    <button onmousedown="event.preventDefault();rteCmd('bold')" title="Bold"><b>B</b></button>
+    <button onmousedown="event.preventDefault();rteCmd('underline')" title="Underline" style="text-decoration:underline;">U</button>
+    <button onmousedown="event.preventDefault();rteCmd('italic')" title="Italic"><i>I</i></button>
+    <span class="tb-sep"></span>
+    <button onmousedown="event.preventDefault();rteHeading('h3')" title="Heading 3">H3</button>
+    <button onmousedown="event.preventDefault();rteHeading('h4')" title="Heading 4">H4</button>
+    <button onmousedown="event.preventDefault();rteHeading('h5')" title="Heading 5">H5</button>
+    <button onmousedown="event.preventDefault();rteHeading('p')" title="Normal text">¶</button>
+    <span class="tb-sep"></span>
+    <button onmousedown="event.preventDefault();rteCmd('fontSize','5')" title="Large text">A+</button>
+    <button onmousedown="event.preventDefault();rteCmd('fontSize','3')" title="Normal size">A</button>
+    <button onmousedown="event.preventDefault();rteCmd('fontSize','1')" title="Small text">A−</button>
+    <span class="tb-sep"></span>
+    <label class="color-wrap" title="Text color">
+      <span>A</span>
+      <input type="color" id="rte-color" value="#000000" onchange="rteCmd('foreColor',this.value)">
+    </label>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   (function(){
@@ -306,14 +339,97 @@
 
     function updateMailPreview(){
       const subject = document.getElementById('mail_subject').value || '';
-      const body = document.getElementById('mail_body').value || '';
+      const body = document.getElementById('mail_body').innerHTML || '';
       document.getElementById('mailPreviewSubject').textContent = subject;
-      document.getElementById('mailPreviewBody').innerHTML = escapeHtml(body).replace(/\r\n|\r|\n/g,'<br/>');
+      document.getElementById('mailPreviewBody').innerHTML = body;
     }
 
     document.getElementById('mail_subject').addEventListener('input', updateMailPreview);
     document.getElementById('mail_body').addEventListener('input', updateMailPreview);
     updateMailPreview();
+
+    /* ── Rich Text Toolbar ── */
+    const rteEditor = document.getElementById('mail_body');
+    const rteToolbar = document.getElementById('rte-toolbar');
+
+    window.rteCmd = function(cmd, val){
+      document.execCommand(cmd, false, val || null);
+      rteEditor.focus();
+      updateMailPreview();
+    };
+
+    window.rteHeading = function(tag){
+      const sel = window.getSelection();
+      if(!sel || !sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+
+      const BLOCK_TAGS = new Set(['P','DIV','H1','H2','H3','H4','H5','H6','LI','BLOCKQUOTE','PRE']);
+
+      // Walk up from selection start to find the nearest block-level element inside the editor
+      let node = range.startContainer;
+      if(node.nodeType === 3) node = node.parentNode;
+      while(node && node !== rteEditor && !BLOCK_TAGS.has(node.tagName)){
+        node = node.parentNode;
+      }
+
+      if(node && node !== rteEditor && rteEditor.contains(node)){
+        const newEl = document.createElement(tag);
+        newEl.innerHTML = node.innerHTML;
+        node.replaceWith(newEl);
+        // Restore cursor to end of new element
+        const r = document.createRange();
+        r.selectNodeContents(newEl);
+        r.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } else {
+        // Bare text directly in editor — wrap it
+        document.execCommand('formatBlock', false, tag);
+      }
+
+      rteEditor.focus();
+      updateMailPreview();
+    };
+
+    function rtePositionToolbar(){
+      const sel = window.getSelection();
+      if(!sel || sel.isCollapsed || !sel.rangeCount){
+        rteToolbar.style.display = 'none';
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      if(!rteEditor.contains(range.commonAncestorContainer)){
+        rteToolbar.style.display = 'none';
+        return;
+      }
+
+      // Capture selection rect BEFORE touching toolbar visibility
+      const selRect = range.getBoundingClientRect();
+
+      // Make toolbar invisible-but-rendered so getBoundingClientRect returns real dimensions
+      rteToolbar.style.visibility = 'hidden';
+      rteToolbar.style.display = 'flex';
+
+      requestAnimationFrame(function(){
+        const tb = rteToolbar.getBoundingClientRect();
+        let left = selRect.left + (selRect.width / 2) - (tb.width / 2);
+        let top  = selRect.top  - tb.height - 8;
+        left = Math.max(8, Math.min(left, window.innerWidth - tb.width - 8));
+        if(top < 8) top = selRect.bottom + 8;
+        rteToolbar.style.left = left + 'px';
+        rteToolbar.style.top  = top  + 'px';
+        rteToolbar.style.visibility = 'visible';
+      });
+    }
+
+    rteEditor.addEventListener('mouseup', rtePositionToolbar);
+    rteEditor.addEventListener('keyup',   rtePositionToolbar);
+
+    document.addEventListener('mousedown', function(e){
+      if(!rteToolbar.contains(e.target) && e.target !== rteEditor){
+        rteToolbar.style.display = 'none';
+      }
+    });
 
     document.getElementById('sendMailBtn').addEventListener('click', async ()=>{
       const btn = document.getElementById('sendMailBtn');
@@ -323,7 +439,9 @@
 
       const to = document.getElementById('mail_to').value.trim();
       const subject = document.getElementById('mail_subject').value.trim();
-      const body = document.getElementById('mail_body').value.trim();
+      const bodyEl = document.getElementById('mail_body');
+      const bodyHtml = bodyEl.innerHTML.trim();
+      const bodyText = bodyEl.textContent.trim();
 
       if(!to || !/[^\s@]+@[^\s@]+\.[^\s@]+/.test(to)){
         result.className = 'small text-danger';
@@ -335,7 +453,7 @@
         result.textContent = 'Subject is required.';
         return;
       }
-      if(!body){
+      if(!bodyText){
         result.className = 'small text-danger';
         result.textContent = 'Body is required.';
         return;
@@ -351,7 +469,7 @@
         const res = await fetch('/api/admin-mail', {
           method:'POST',
           headers:{ 'Content-Type':'application/json', Authorization: 'Bearer ' + token },
-          body: JSON.stringify({ to, subject, body })
+          body: JSON.stringify({ to, subject, body: bodyHtml })
         });
         const data = await res.json();
         if(!res.ok){

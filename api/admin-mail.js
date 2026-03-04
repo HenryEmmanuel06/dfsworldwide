@@ -11,9 +11,7 @@ function escapeHtml(s) {
 }
 
 function renderBodyHtml(body) {
-  const safe = escapeHtml(body || "");
-  // Preserve new lines for textarea input
-  return safe.replace(/\r\n|\r|\n/g, "<br/>");
+  return body || "";
 }
 
 function buildTemplate({ subject, body }) {
@@ -21,6 +19,7 @@ function buildTemplate({ subject, body }) {
   const headerBg = `${base}/assets/images/email-bg.png`;
   const headerLogo = `${base}/assets/images/email-logo.png`;
 
+  const footerBg = `${base}/assets/images/footer-email-bg.png`;
   const facebook = `${base}/assets/images/akar-icons_facebook-fill.png`;
   const twitter = `${base}/assets/images/prime_twitter.png`;
   const linkedin = `${base}/assets/images/fa-brands_linkedin.png`;
@@ -71,19 +70,19 @@ function buildTemplate({ subject, body }) {
           </tr>
 
           <tr>
-            <td style="padding:22px 24px 10px;">
+            <td style="padding:22px 36px 10px; padding-left: 24px;">
               <div style="font-size:18px; font-weight:700; color:#0f172a; margin:0;">${safeSubject}</div>
             </td>
           </tr>
 
           <tr>
-            <td style="padding:0 24px 24px; font-size:14px; line-height:1.7; color:#111827;">
+            <td style="padding:28px 36px 36px; font-size:14px; line-height:1.7; color:#111827;">
               <div>${bodyHtml}</div>
             </td>
           </tr>
 
           <tr>
-            <td class="dfs-footer" bgcolor="#0b0b0b" style="background:#0b0b0b !important;background-color:#0b0b0b !important;color:#ffffff;text-align:center;padding:30px 18px 36px;">
+            <td class="dfs-footer" background="${footerBg}" style="background-image:url('${footerBg}') !important;background-repeat:no-repeat !important;background-position:center center !important;background-size:cover !important;background-color:#0b0b0b;color:#ffffff;text-align:center;padding:30px 18px 36px;">
               <div class="dfs-footer-text" style="font-size:12px;color:#ffffff !important;opacity:0.9;margin-bottom:20px;">Follow us on all platform for latest update</div>
               <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
                 <tr>
