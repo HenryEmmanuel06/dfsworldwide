@@ -61,6 +61,10 @@
         <div class="row g-3">
           <div class="col-lg-5">
             <div class="mb-3">
+              <label class="form-label">From name</label>
+              <input type="text" class="form-control" id="mail_from_name" value="DFS Worldwide" placeholder="Sender display name" required>
+            </div>
+            <div class="mb-3">
               <label class="form-label">Recipient email</label>
               <input type="email" class="form-control" id="mail_to" placeholder="customer@email.com" required>
             </div>
@@ -469,7 +473,7 @@
         const res = await fetch('/api/admin-mail', {
           method:'POST',
           headers:{ 'Content-Type':'application/json', Authorization: 'Bearer ' + token },
-          body: JSON.stringify({ to, subject, body: bodyHtml })
+          body: JSON.stringify({ to, subject, body: bodyHtml, fromName: document.getElementById('mail_from_name').value.trim() || 'DFS Worldwide' })
         });
         const data = await res.json();
         if(!res.ok){

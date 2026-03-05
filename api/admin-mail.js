@@ -121,7 +121,7 @@ export default async function handler(req, res) {
   const email = (userData.user.email || "").toLowerCase();
   if (email !== ADMIN_EMAIL) return res.status(403).json({ error: "Forbidden" });
 
-  const { to, subject, body } = req.body || {};
+  const { to, subject, body, fromName } = req.body || {};
 
   const toOk = typeof to === "string" && /[^\s@]+@[^\s@]+\.[^\s@]+/.test(to.trim());
   if (!toOk) return res.status(400).json({ error: "Invalid to" });
@@ -135,11 +135,16 @@ export default async function handler(req, res) {
   const tpl = buildTemplate({ subject: subject.trim(), body: body.trim() });
 
   try {
+    const senderName = (typeof fromName === "string" && fromName.trim()) ? fromName.trim() : "DFS Worldwide";
+    const senderEmail = process.env.TITAN_FROM_EMAIL || process.env.TITAN_USER || "info@dfsworldwidetracking.online";
+    const fromField = `"${senderName}" <${senderEmail}>`;
+
     const info = await sendTitanMail({
       to: to.trim(),
       subject: subject.trim(),
       text: tpl.text,
       html: tpl.html,
+      from: fromField,
     });
 
     return res.status(200).json({ ok: true, messageId: info?.messageId || null });
