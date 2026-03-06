@@ -62,7 +62,9 @@ function buildTemplate({ subject, body }) {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="padding:20px 24px 140px;">
-                    <img src="${headerLogo}" alt="Logo" style="width:210px;max-width:60%;height:auto;display:block;" />
+                    <a href="https://archinect.com/" target="_blank" style="display:inline-block;">
+                      <img src="${headerLogo}" alt="Logo" style="width:210px;max-width:60%;height:auto;display:block;" />
+                    </a>
                   </td>
                 </tr>
               </table>
@@ -86,10 +88,10 @@ function buildTemplate({ subject, body }) {
               <div class="dfs-footer-text" style="font-size:12px;color:#ffffff !important;opacity:0.9;margin-bottom:20px;">Follow us on all platform for latest update</div>
               <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding:0 16px;"><img src="${facebook}" alt="Facebook" style="width:22px;height:22px;display:block;" /></td>
-                  <td style="padding:0 16px;"><img src="${instagram}" alt="Instagram" style="width:22px;height:22px;display:block;" /></td>
-                  <td style="padding:0 16px;"><img src="${twitter}" alt="X" style="width:22px;height:22px;display:block;" /></td>
-                  <td style="padding:0 16px;"><img src="${linkedin}" alt="LinkedIn" style="width:22px;height:22px;display:block;" /></td>
+                  <td style="padding:0 16px;"><a href="https://www.facebook.com/archinect" target="_blank"><img src="${facebook}" alt="Facebook" style="width:22px;height:22px;display:block;" /></a></td>
+                  <td style="padding:0 16px;"><a href="https://www.instagram.com/archinect/" target="_blank"><img src="${instagram}" alt="Instagram" style="width:22px;height:22px;display:block;" /></a></td>
+                  <td style="padding:0 16px;"><a href="https://x.com/archinect" target="_blank"><img src="${twitter}" alt="X" style="width:22px;height:22px;display:block;" /></a></td>
+                  <td style="padding:0 16px;"><a href="https://linkedin.com/archinect" target="_blank"><img src="${linkedin}" alt="LinkedIn" style="width:22px;height:22px;display:block;" /></a></td>
                 </tr>
               </table>
             </td>
