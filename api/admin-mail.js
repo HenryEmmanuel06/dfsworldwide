@@ -21,6 +21,9 @@ function buildTemplate({ subject, body, category }) {
   const outerBg = "#f7f7f8";
   const headerLogo = cat === "influencer" ? `${base}/assets/images/email-logo-2.png` : `${base}/assets/images/email-logo.png`;
   const footerFallbackBg = cat === "influencer" ? "#ED1B7D" : "#0b0b0b";
+  const headerLogoStyle = cat === "influencer"
+    ? "width:310px;height:65px;display:block;"
+    : "width:210px;max-width:60%;height:auto;display:block;";
 
   const socialLinks = {
     facebook: "https://www.facebook.com/archinect",
@@ -36,7 +39,6 @@ function buildTemplate({ subject, body, category }) {
     socialLinks.linkedin = process.env.INFLUENCER_LINKEDIN_URL || socialLinks.linkedin;
   }
 
-  const footerBg = `${base}/assets/images/footer-email-bg.png`;
   const facebook = `${base}/assets/images/akar-icons_facebook-fill.png`;
   const twitter = `${base}/assets/images/prime_twitter.png`;
   const linkedin = `${base}/assets/images/fa-brands_linkedin.png`;
@@ -75,12 +77,12 @@ function buildTemplate({ subject, body, category }) {
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.06);overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111827;">
           <tr>
-            <td background="${headerBg}" style="padding:0;background-image:url('${headerBg}');background-repeat:no-repeat;background-position:center top;background-size:cover;">
+            <td background="${headerBg}" style="padding:0;background-image:url('${headerBg}');background-repeat:no-repeat;background-position:center top;background-size:cover;padding-top:30px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="padding:20px 24px 140px;">
                     <a href="https://archinect.com/" target="_blank" style="display:inline-block;">
-                      <img src="${headerLogo}" alt="Logo" style="width:210px;max-width:60%;height:auto;display:block;" />
+                      <img src="${headerLogo}" alt="Logo" style="${headerLogoStyle}" />
                     </a>
                   </td>
                 </tr>
@@ -101,7 +103,7 @@ function buildTemplate({ subject, body, category }) {
           </tr>
 
           <tr>
-            <td class="dfs-footer" background="${footerBg}" style="background-image:url('${footerBg}') !important;background-repeat:no-repeat !important;background-position:center center !important;background-size:cover !important;background-color:${footerFallbackBg};color:#ffffff;text-align:center;padding:30px 18px 36px;">
+            <td class="dfs-footer" bgcolor="${footerFallbackBg}" style="background-color:${footerFallbackBg} !important;color:#ffffff;text-align:center;padding:30px 18px 36px;">
               <div class="dfs-footer-text" style="font-size:12px;color:#ffffff !important;opacity:0.9;margin-bottom:20px;">Follow us on all platform for latest update</div>
               <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
                 <tr>
