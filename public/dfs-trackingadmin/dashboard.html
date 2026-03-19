@@ -65,6 +65,13 @@
               <input type="text" class="form-control" id="mail_from_name" value="DFS Worldwide" placeholder="Sender display name" required>
             </div>
             <div class="mb-3">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="mail_category" required>
+                <option value="archinect" selected>Archinect</option>
+                <option value="influencer">Influencer</option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label class="form-label">Recipient email</label>
               <input type="email" class="form-control" id="mail_to" placeholder="customer@email.com" required>
             </div>
@@ -85,11 +92,11 @@
             <div class="d-flex align-items-center justify-content-between mb-2">
               <div class="small text-muted">Preview</div>
             </div>
-            <div class="email-preview">
+            <div class="email-preview" id="mailPreviewContainer">
               <div id="mailPreview" class="email-template">
                 <div class="email-header">
-                  <img class="bg" src="../assets/images/email-bg.png" alt="Header" />
-                  <img class="logo" src="../assets/images/email-logo.png" alt="Logo" />
+                  <img class="bg" id="mailPreviewHeaderBg" src="../assets/images/email-bg.png" alt="Header" />
+                  <img class="logo" id="mailPreviewLogo" src="../assets/images/email-logo.png" alt="Logo" />
                 </div>
                 <div style="padding:22px 24px 10px;">
                   <div id="mailPreviewSubject" style="font-size:18px; font-weight:700; color:#0f172a; margin:0;"></div>
@@ -97,7 +104,7 @@
                 <div style="padding:0 24px 24px; font-size:14px; line-height:1.7; color:#111827;">
                   <div id="mailPreviewBody"></div>
                 </div>
-                <div class="email-footer">
+                <div class="email-footer" id="mailPreviewFooter">
                   <div style="font-size:12px; opacity:0.9; margin-bottom:12px;">Follow us on all platform for latest update</div>
                   <div class="icons">
                     <img src="../assets/images/akar-icons_facebook-fill.png" alt="Facebook" />
@@ -344,10 +351,26 @@
     function updateMailPreview(){
       const subject = document.getElementById('mail_subject').value || '';
       const body = document.getElementById('mail_body').innerHTML || '';
+      const category = (document.getElementById('mail_category').value || 'archinect').toLowerCase();
+
       document.getElementById('mailPreviewSubject').textContent = subject;
       document.getElementById('mailPreviewBody').innerHTML = body;
+
+      const header = document.getElementById('mailPreviewHeaderBg');
+      const logo = document.getElementById('mailPreviewLogo');
+      const footer = document.getElementById('mailPreviewFooter');
+      if(category === 'influencer'){
+        header.src = '../assets/images/email-bg-2.png';
+        logo.src = '../assets/images/email-logo-2.png';
+        footer.style.background = '#ED1B7D';
+      } else {
+        header.src = '../assets/images/email-bg.png';
+        logo.src = '../assets/images/email-logo.png';
+        footer.style.background = '';
+      }
     }
 
+    document.getElementById('mail_category').addEventListener('change', updateMailPreview);
     document.getElementById('mail_subject').addEventListener('input', updateMailPreview);
     document.getElementById('mail_body').addEventListener('input', updateMailPreview);
     updateMailPreview();
@@ -443,6 +466,7 @@
 
       const to = document.getElementById('mail_to').value.trim();
       const subject = document.getElementById('mail_subject').value.trim();
+      const category = (document.getElementById('mail_category').value || 'archinect').toLowerCase();
       const bodyEl = document.getElementById('mail_body');
       const bodyHtml = bodyEl.innerHTML.trim();
       const bodyText = bodyEl.textContent.trim();
@@ -473,7 +497,7 @@
         const res = await fetch('/api/admin-mail', {
           method:'POST',
           headers:{ 'Content-Type':'application/json', Authorization: 'Bearer ' + token },
-          body: JSON.stringify({ to, subject, body: bodyHtml, fromName: document.getElementById('mail_from_name').value.trim() || 'DFS Worldwide' })
+          body: JSON.stringify({ to, subject, body: bodyHtml, category, fromName: document.getElementById('mail_from_name').value.trim() || 'DFS Worldwide' })
         });
         const data = await res.json();
         if(!res.ok){

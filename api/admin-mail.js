@@ -14,10 +14,13 @@ function renderBodyHtml(body) {
   return body || "";
 }
 
-function buildTemplate({ subject, body }) {
+function buildTemplate({ subject, body, category }) {
   const base = "https://dfsworldwidetracking.online";
-  const headerBg = `${base}/assets/images/email-bg.png`;
-  const headerLogo = `${base}/assets/images/email-logo.png`;
+  const cat = String(category || "archinect").toLowerCase();
+  const headerBg = cat === "influencer" ? `${base}/assets/images/email-bg-2.png` : `${base}/assets/images/email-bg.png`;
+  const outerBg = "#f7f7f8";
+  const headerLogo = cat === "influencer" ? `${base}/assets/images/email-logo-2.png` : `${base}/assets/images/email-logo.png`;
+  const footerFallbackBg = cat === "influencer" ? "#ED1B7D" : "#0b0b0b";
 
   const footerBg = `${base}/assets/images/footer-email-bg.png`;
   const facebook = `${base}/assets/images/akar-icons_facebook-fill.png`;
@@ -52,8 +55,8 @@ function buildTemplate({ subject, body }) {
     }
   </style>
 </head>
-<body class="dfs-email-body" style="margin:0;padding:0;background:#f7f7f8;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f7f8;padding:24px 0;margin:0;">
+<body class="dfs-email-body" style="margin:0;padding:0;background:${outerBg};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${outerBg};padding:24px 0;margin:0;">
     <tr>
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.06);overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#111827;">
@@ -84,7 +87,7 @@ function buildTemplate({ subject, body }) {
           </tr>
 
           <tr>
-            <td class="dfs-footer" background="${footerBg}" style="background-image:url('${footerBg}') !important;background-repeat:no-repeat !important;background-position:center center !important;background-size:cover !important;background-color:#0b0b0b;color:#ffffff;text-align:center;padding:30px 18px 36px;">
+            <td class="dfs-footer" background="${footerBg}" style="background-image:url('${footerBg}') !important;background-repeat:no-repeat !important;background-position:center center !important;background-size:cover !important;background-color:${footerFallbackBg};color:#ffffff;text-align:center;padding:30px 18px 36px;">
               <div class="dfs-footer-text" style="font-size:12px;color:#ffffff !important;opacity:0.9;margin-bottom:20px;">Follow us on all platform for latest update</div>
               <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
                 <tr>
@@ -123,7 +126,7 @@ export default async function handler(req, res) {
   const email = (userData.user.email || "").toLowerCase();
   if (email !== ADMIN_EMAIL) return res.status(403).json({ error: "Forbidden" });
 
-  const { to, subject, body, fromName } = req.body || {};
+  const { to, subject, body, fromName, category } = req.body || {};
 
   const toOk = typeof to === "string" && /[^\s@]+@[^\s@]+\.[^\s@]+/.test(to.trim());
   if (!toOk) return res.status(400).json({ error: "Invalid to" });
@@ -134,7 +137,7 @@ export default async function handler(req, res) {
   const bodyOk = typeof body === "string" && body.trim().length > 0;
   if (!bodyOk) return res.status(400).json({ error: "Missing body" });
 
-  const tpl = buildTemplate({ subject: subject.trim(), body: body.trim() });
+  const tpl = buildTemplate({ subject: subject.trim(), body: body.trim(), category });
 
   try {
     const senderName = (typeof fromName === "string" && fromName.trim()) ? fromName.trim() : "DFS Worldwide";
