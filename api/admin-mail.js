@@ -21,6 +21,7 @@ function buildTemplate({ subject, body, category }) {
   const outerBg = "#f7f7f8";
   const headerLogo = cat === "influencer" ? `${base}/assets/images/email-logo-2.png` : `${base}/assets/images/email-logo.png`;
   const footerFallbackBg = cat === "influencer" ? "#ED1B7D" : "#0b0b0b";
+  const headerLogoHref = cat === "influencer" ? "https://theinfluencermarketingfactory.com/" : "https://archinect.com/";
   const headerLogoStyle = cat === "influencer"
     ? "width:310px;height:65px;display:block;"
     : "width:210px;max-width:60%;height:auto;display:block;";
@@ -81,7 +82,7 @@ function buildTemplate({ subject, body, category }) {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="padding:20px 24px 140px;">
-                    <a href="https://archinect.com/" target="_blank" style="display:inline-block;">
+                    <a href="${headerLogoHref}" target="_blank" style="display:inline-block;">
                       <img src="${headerLogo}" alt="Logo" style="${headerLogoStyle}" />
                     </a>
                   </td>
