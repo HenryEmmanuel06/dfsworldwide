@@ -22,6 +22,20 @@ function buildTemplate({ subject, body, category }) {
   const headerLogo = cat === "influencer" ? `${base}/assets/images/email-logo-2.png` : `${base}/assets/images/email-logo.png`;
   const footerFallbackBg = cat === "influencer" ? "#ED1B7D" : "#0b0b0b";
 
+  const socialLinks = {
+    facebook: "https://www.facebook.com/archinect",
+    instagram: "https://www.instagram.com/archinect/",
+    twitter: "https://x.com/archinect",
+    linkedin: "https://linkedin.com/archinect",
+  };
+
+  if (cat === "influencer") {
+    socialLinks.facebook = process.env.INFLUENCER_FACEBOOK_URL || socialLinks.facebook;
+    socialLinks.instagram = process.env.INFLUENCER_INSTAGRAM_URL || socialLinks.instagram;
+    socialLinks.twitter = process.env.INFLUENCER_TWITTER_URL || process.env.INFLUENCER_X_URL || socialLinks.twitter;
+    socialLinks.linkedin = process.env.INFLUENCER_LINKEDIN_URL || socialLinks.linkedin;
+  }
+
   const footerBg = `${base}/assets/images/footer-email-bg.png`;
   const facebook = `${base}/assets/images/akar-icons_facebook-fill.png`;
   const twitter = `${base}/assets/images/prime_twitter.png`;
@@ -43,14 +57,14 @@ function buildTemplate({ subject, body, category }) {
   <style>
     :root { color-scheme: light only; }
     /* Force footer black bg + white text in Gmail dark mode */
-    [data-ogsc] .dfs-footer { background-color: #0b0b0b !important; color: #ffffff !important; }
-    [data-ogsb] .dfs-footer { background-color: #0b0b0b !important; }
+    [data-ogsc] .dfs-footer { background-color: ${footerFallbackBg} !important; color: #ffffff !important; }
+    [data-ogsb] .dfs-footer { background-color: ${footerFallbackBg} !important; }
     [data-ogsc] .dfs-footer-text { color: #ffffff !important; }
-    u + .dfs-email-body .dfs-footer { background-color: #0b0b0b !important; color: #ffffff !important; }
+    u + .dfs-email-body .dfs-footer { background-color: ${footerFallbackBg} !important; color: #ffffff !important; }
     u + .dfs-email-body .dfs-footer-text { color: #ffffff !important; }
     /* iOS/Apple Mail dark mode */
     @media (prefers-color-scheme: dark) {
-      .dfs-footer { background-color: #0b0b0b !important; color: #ffffff !important; }
+      .dfs-footer { background-color: ${footerFallbackBg} !important; color: #ffffff !important; }
       .dfs-footer-text { color: #ffffff !important; }
     }
   </style>
@@ -91,10 +105,10 @@ function buildTemplate({ subject, body, category }) {
               <div class="dfs-footer-text" style="font-size:12px;color:#ffffff !important;opacity:0.9;margin-bottom:20px;">Follow us on all platform for latest update</div>
               <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding:0 16px;"><a href="https://www.facebook.com/archinect" target="_blank"><img src="${facebook}" alt="Facebook" style="width:22px;height:22px;display:block;" /></a></td>
-                  <td style="padding:0 16px;"><a href="https://www.instagram.com/archinect/" target="_blank"><img src="${instagram}" alt="Instagram" style="width:22px;height:22px;display:block;" /></a></td>
-                  <td style="padding:0 16px;"><a href="https://x.com/archinect" target="_blank"><img src="${twitter}" alt="X" style="width:22px;height:22px;display:block;" /></a></td>
-                  <td style="padding:0 16px;"><a href="https://linkedin.com/archinect" target="_blank"><img src="${linkedin}" alt="LinkedIn" style="width:22px;height:22px;display:block;" /></a></td>
+                  <td style="padding:0 16px;"><a href="${socialLinks.facebook}" target="_blank"><img src="${facebook}" alt="Facebook" style="width:22px;height:22px;display:block;" /></a></td>
+                  <td style="padding:0 16px;"><a href="${socialLinks.instagram}" target="_blank"><img src="${instagram}" alt="Instagram" style="width:22px;height:22px;display:block;" /></a></td>
+                  <td style="padding:0 16px;"><a href="${socialLinks.twitter}" target="_blank"><img src="${twitter}" alt="X" style="width:22px;height:22px;display:block;" /></a></td>
+                  <td style="padding:0 16px;"><a href="${socialLinks.linkedin}" target="_blank"><img src="${linkedin}" alt="LinkedIn" style="width:22px;height:22px;display:block;" /></a></td>
                 </tr>
               </table>
             </td>
