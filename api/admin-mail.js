@@ -23,7 +23,7 @@ function buildTemplate({ subject, body, category }) {
   const footerFallbackBg = cat === "influencer" ? "#ED1B7D" : "#0b0b0b";
   const headerLogoHref = cat === "influencer" ? "https://theinfluencermarketingfactory.com/" : "https://archinect.com/";
   const headerLogoStyle = cat === "influencer"
-    ? "width:310px;height:65px;display:block;"
+    ? "width:265px;height:105px;display:block;"
     : "width:210px;max-width:60%;height:auto;display:block;";
 
   const socialLinks = {
