@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
+const CODE_VERSION = 'stripe-db-update-2026-03-21-1';
+
 function getBaseUrl(req) {
   const candidates = [
     process.env.APP_BASE_URL,
@@ -299,6 +301,7 @@ async function handleStripeCreate(req, res) {
           provider: 'stripe',
           checkoutUrl: session.url,
           sessionId: session.id,
+          code_version: CODE_VERSION,
           debug: _debug,
         });
       }
@@ -309,6 +312,7 @@ async function handleStripeCreate(req, res) {
       provider: 'stripe',
       checkoutUrl: session.url,
       sessionId: session.id,
+      code_version: CODE_VERSION,
     });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Stripe session creation failed' });
@@ -333,6 +337,7 @@ async function handleStripeStatus(req, res) {
     const paid = session.payment_status === 'paid' || session.status === 'complete';
 
     const debugInfo = debug ? {
+      code_version: CODE_VERSION,
       session_id: session.id,
       paid,
       session_payment_status: session.payment_status,
@@ -375,8 +380,8 @@ async function handleStripeStatus(req, res) {
           // - Some deployments reported PostgREST errors for filtering by `payment_id`.
           // - Stripe session id is always available, and we also have `order_id` + `tracking_id`.
           const updateAttempts = [];
-          const attemptUpdate = async (label, qb) => {
-            const r = await qb.update(updatePayload).select('id');
+          const attemptUpdate = async (label, updater) => {
+            const r = await updater();
             const count = Array.isArray(r?.data) ? r.data.length : 0;
             updateAttempts.push({
               label,
@@ -392,12 +397,29 @@ async function handleStripeStatus(req, res) {
           };
 
           let updatedCount = 0;
-          updatedCount = await attemptUpdate('stripe_session_id', supabase.from('payments').eq('stripe_session_id', String(session.id)));
+          updatedCount = await attemptUpdate('stripe_session_id', () =>
+            supabase.from('payments')
+              .update(updatePayload)
+              .eq('stripe_session_id', String(session.id))
+              .select('id')
+          );
+
           if (updatedCount === 0 && orderId) {
-            updatedCount = await attemptUpdate('order_id', supabase.from('payments').eq('order_id', String(orderId)));
+            updatedCount = await attemptUpdate('order_id', () =>
+              supabase.from('payments')
+                .update(updatePayload)
+                .eq('order_id', String(orderId))
+                .select('id')
+            );
           }
+
           if (updatedCount === 0 && trackingId) {
-            updatedCount = await attemptUpdate('tracking_id', supabase.from('payments').eq('tracking_id', String(trackingId)));
+            updatedCount = await attemptUpdate('tracking_id', () =>
+              supabase.from('payments')
+                .update(updatePayload)
+                .eq('tracking_id', String(trackingId))
+                .select('id')
+            );
           }
 
           if (debugInfo) {
@@ -464,6 +486,7 @@ async function handleStripeStatus(req, res) {
       payment_status: session.payment_status,
       status: session.status,
       payment_intent: session.payment_intent?.id || session.payment_intent || null,
+      code_version: CODE_VERSION,
       ...(debugInfo ? { debug: debugInfo } : {}),
     });
   } catch (e) {
