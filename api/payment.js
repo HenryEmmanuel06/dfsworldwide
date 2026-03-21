@@ -1,5 +1,42 @@
 import crypto from 'crypto';
 import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
+
+function getBaseUrl(req) {
+  const candidates = [
+    process.env.APP_BASE_URL,
+    process.env.NEXT_PUBLIC_BASE_URL,
+    process.env.STRIPE_BASE_URL,
+  ].filter(Boolean);
+
+  for (const c of candidates) {
+    try {
+      const u = new URL(String(c));
+      const host = (u.hostname || '').toLowerCase();
+      // Prevent misconfig where STRIPE_BASE_URL is set to Stripe API domain.
+      if (host.endsWith('stripe.com')) continue;
+      return u.origin;
+    } catch (_) {}
+  }
+
+  if (req.headers['x-forwarded-host']) {
+    return `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers['x-forwarded-host']}`;
+  }
+
+  try {
+    const origin = req.headers.origin;
+    if (origin) return new URL(String(origin)).origin;
+  } catch (_) {}
+
+  return 'https://dfsworldwide.vercel.app';
+}
+
+function getSupabaseAdminClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey, { db: { schema: 'public' }, auth: { persistSession: false } });
+}
 
 async function handleCreate(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -27,10 +64,7 @@ async function handleCreate(req, res) {
       return res.status(500).json({ error: 'Payment service not configured' });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
-      (req.headers['x-forwarded-host']
-        ? `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers['x-forwarded-host']}`
-        : req.headers.origin || 'https://dfsworldwide.vercel.app');
+    const baseUrl = getBaseUrl(req);
 
     const priceAmount = parseFloat(amount);
     if (isNaN(priceAmount) || priceAmount <= 0) {
@@ -178,6 +212,169 @@ async function handleCreate(req, res) {
   }
 }
 
+async function handleStripeCreate(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  try { await import('dotenv/config'); } catch (_) {}
+
+  const { trackingId, amount, currencyType } = req.body || {};
+  if (!trackingId || amount === undefined || amount === null) {
+    return res.status(400).json({ error: 'Missing required fields: trackingId, amount' });
+  }
+
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) return res.status(500).json({ error: 'Stripe not configured' });
+
+  const priceAmount = parseFloat(amount);
+  if (isNaN(priceAmount) || priceAmount <= 0) {
+    return res.status(400).json({ error: 'Invalid amount. Must be a positive number.' });
+  }
+
+  const currency = String(currencyType || 'USD').toLowerCase();
+  const baseUrl = getBaseUrl(req);
+  const stripe = new Stripe(secretKey);
+
+  try {
+    const orderId = `stripe-${trackingId}-${Date.now()}`;
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      success_url: `${baseUrl}/payment?status=success&provider=stripe&session_id={CHECKOUT_SESSION_ID}&tid=${encodeURIComponent(trackingId)}`,
+      cancel_url: `${baseUrl}/payment?status=cancelled&provider=stripe&tid=${encodeURIComponent(trackingId)}`,
+      client_reference_id: String(trackingId),
+      metadata: {
+        tracking_id: String(trackingId),
+        order_id: String(orderId),
+      },
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency,
+            unit_amount: Math.round(priceAmount * 100),
+            product_data: {
+              name: `Shipment Payment (${trackingId})`,
+              description: `Payment for shipment tracking: ${trackingId}`,
+            },
+          },
+        },
+      ],
+    });
+
+    const supabase = getSupabaseAdminClient();
+    if (supabase) {
+      const paymentRecord = {
+        payment_id: String(session.id),
+        order_id: String(orderId),
+        tracking_id: String(trackingId),
+        price_amount: priceAmount,
+        price_currency: currency,
+        pay_amount: priceAmount,
+        pay_currency: currency,
+        payment_status: 'waiting',
+        payment_url: session.url ? String(session.url) : null,
+        invoice_url: session.url ? String(session.url) : null,
+        raw_response: session,
+        provider: 'stripe',
+        stripe_session_id: session.id,
+        stripe_payment_intent: session.payment_intent ? String(session.payment_intent) : null,
+        stripe_customer_id: session.customer ? String(session.customer) : null,
+      };
+      try { await supabase.from('payments').insert(paymentRecord); } catch (_) {}
+    }
+
+    return res.status(200).json({
+      success: true,
+      provider: 'stripe',
+      checkoutUrl: session.url,
+      sessionId: session.id,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || 'Stripe session creation failed' });
+  }
+}
+
+async function handleStripeStatus(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  try { await import('dotenv/config'); } catch (_) {}
+
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) return res.status(500).json({ error: 'Stripe not configured' });
+
+  const sessionId = req.query?.session_id || req.query?.sessionId;
+  if (!sessionId) return res.status(400).json({ error: 'Missing session_id' });
+
+  try {
+    const stripe = new Stripe(secretKey);
+    const session = await stripe.checkout.sessions.retrieve(String(sessionId), { expand: ['payment_intent'] });
+    const paid = session.payment_status === 'paid' || session.status === 'complete';
+
+    if (paid) {
+      const supabase = getSupabaseAdminClient();
+      if (supabase) {
+        try {
+          const nowIso = new Date().toISOString();
+          const updatePayload = {
+            payment_status: 'success',
+            stripe_payment_status: session.payment_status,
+            stripe_status: session.status,
+            ipn_received: true,
+            ipn_received_at: nowIso,
+            ipn_data: session,
+          };
+
+          const update1 = await supabase.from('payments')
+            .update(updatePayload)
+            .eq('payment_id', String(session.id))
+            .select('id');
+
+          const updatedCount = Array.isArray(update1?.data) ? update1.data.length : 0;
+
+          // If the original insert failed (e.g. missing stripe columns) there may be no row to update.
+          if (updatedCount === 0) {
+            const trackingId = session.client_reference_id || session.metadata?.tracking_id || null;
+            const orderId = session.metadata?.order_id || `stripe-${trackingId || 'unknown'}-${Date.now()}`;
+            const amountTotal = typeof session.amount_total === 'number' ? (session.amount_total / 100) : null;
+            const currency = session.currency ? String(session.currency).toLowerCase() : null;
+
+            const minimalRecord = {
+              payment_id: String(session.id),
+              order_id: String(orderId),
+              tracking_id: trackingId ? String(trackingId) : String(session.client_reference_id || ''),
+              price_amount: amountTotal,
+              price_currency: currency,
+              pay_amount: amountTotal,
+              pay_currency: currency,
+              payment_status: 'success',
+              payment_url: session.url ? String(session.url) : null,
+              invoice_url: session.url ? String(session.url) : null,
+              raw_response: session,
+              ipn_received: true,
+              ipn_received_at: nowIso,
+              ipn_data: session,
+            };
+
+            try {
+              await supabase.from('payments').insert(minimalRecord);
+            } catch (_) {}
+          }
+        } catch (_) {}
+      }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      provider: 'stripe',
+      paid,
+      sessionId: session.id,
+      payment_status: session.payment_status,
+      status: session.status,
+      payment_intent: session.payment_intent?.id || session.payment_intent || null,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || 'Stripe status check failed' });
+  }
+}
+
 async function handleIpn(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -259,6 +456,8 @@ export default async function handler(req, res) {
 
   if (action === 'create') return handleCreate(req, res);
   if (action === 'ipn') return handleIpn(req, res);
+  if (action === 'stripe-create') return handleStripeCreate(req, res);
+  if (action === 'stripe-status') return handleStripeStatus(req, res);
   if (action === 'status' || req.method === 'GET') return handleStatus(req, res);
 
   return res.status(400).json({ error: 'Invalid action' });

@@ -5,6 +5,8 @@
     { "source": "/api/user",           "destination": "/api/auth?_action=user" },
     { "source": "/api/tracking-get",   "destination": "/api/tracking" },
     { "source": "/api/payment-create", "destination": "/api/payment?_action=create" },
+    { "source": "/api/payment-stripe-create", "destination": "/api/payment?_action=stripe-create" },
+    { "source": "/api/payment-stripe-status", "destination": "/api/payment?_action=stripe-status" },
     { "source": "/api/payment-ipn",    "destination": "/api/payment?_action=ipn" },
     { "source": "/api/payment-status", "destination": "/api/payment?_action=status" }
   ]

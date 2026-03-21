@@ -456,6 +456,15 @@
           </div>
         </div>
 
+        <div class="payment-method" data-method="stripe" onclick="handlePaymentMethodClick(this)">
+          <div class="payment-method-header">
+            <div class="method-name">
+              Stripe (Card)
+            </div>
+            <span class="method-status status-available">Available</span>
+          </div>
+        </div>
+
         <div class="payment-method" data-method="crypto" onclick="handlePaymentMethodClick(this)">
           <div class="payment-method-header">
             <div class="method-name">
@@ -601,6 +610,8 @@
     function updatePayButton() {
       const payButton = document.getElementById('payButton');
       if (selectedMethod === 'crypto' && selectedCrypto) {
+        payButton.disabled = false;
+      } else if (selectedMethod === 'stripe') {
         payButton.disabled = false;
       } else {
         payButton.disabled = true;
@@ -875,13 +886,20 @@
     }
 
     async function initiatePayment() {
-      if (selectedMethod !== 'crypto' || !selectedCrypto) {
-        showAlert('Please select a cryptocurrency', 'warning');
+      if (!trackingId) {
+        showAlert('Tracking ID is missing', 'danger');
         return;
       }
 
-      if (!trackingId) {
-        showAlert('Tracking ID is missing', 'danger');
+      if (selectedMethod === 'crypto') {
+        if (!selectedCrypto) {
+          showAlert('Please select a cryptocurrency', 'warning');
+          return;
+        }
+      } else if (selectedMethod === 'stripe') {
+        // ok
+      } else {
+        showAlert('Please select a payment method', 'warning');
         return;
       }
 
@@ -893,25 +911,22 @@
       document.getElementById('alertMessage').style.display = 'none';
 
       try {
-        console.log('Initiating payment:', {
-          trackingId,
-          currency: selectedCrypto,
-          amount,
-          currencyType: 'USD'
-        });
-
-        const response = await fetch('/api/payment-create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            trackingId: trackingId,
-            currency: selectedCrypto,
-            amount: amount,
-            currencyType: 'USD'
-          })
-        });
+        let response;
+        if (selectedMethod === 'stripe') {
+          console.log('Initiating Stripe payment:', { trackingId, amount, currencyType: 'USD' });
+          response = await fetch('/api/payment-stripe-create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trackingId: trackingId, amount: amount, currencyType: 'USD' })
+          });
+        } else {
+          console.log('Initiating crypto payment:', { trackingId, currency: selectedCrypto, amount, currencyType: 'USD' });
+          response = await fetch('/api/payment-create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trackingId: trackingId, currency: selectedCrypto, amount: amount, currencyType: 'USD' })
+          });
+        }
 
         let data;
         try {
@@ -953,10 +968,17 @@
         if (data.success) {
           // Store payment data
           paymentData = data;
-          
-          // Display payment details instead of redirecting
+
+          if (selectedMethod === 'stripe') {
+            const url = data.checkoutUrl || data.url;
+            if (!url) throw new Error('Stripe checkout URL missing');
+            window.location.href = url;
+            return;
+          }
+
+          // Crypto: display payment details instead of redirecting
           displayPaymentDetails(data);
-          
+
           // Hide payment method selection
           document.querySelector('.payment-methods').style.display = 'none';
           document.getElementById('payButton').style.display = 'none';
@@ -994,10 +1016,29 @@
       
       // Check if redirected from payment (success/cancelled)
       const status = getParam('status');
+      const provider = getParam('provider');
+      const stripeSessionId = getParam('session_id');
       if (status === 'success') {
-        showAlert('Payment completed successfully!', 'success');
+        if (provider === 'stripe' && stripeSessionId) {
+          // Verify session before showing success
+          (async function(){
+            try {
+              const resp = await fetch(`/api/payment-stripe-status?session_id=${encodeURIComponent(stripeSessionId)}`);
+              const out = await resp.json();
+              if (resp.ok && out && out.paid === true) {
+                showTimedModal('success', 'Payment Successful', 'An email will be sent to you, onto due date of item delivery', 2000);
+              } else {
+                showTimedModal('pending', 'Payment Verifying', 'We are still verifying your payment. Please refresh in a moment.', 2500);
+              }
+            } catch (e) {
+              showTimedModal('pending', 'Payment Verifying', 'We are still verifying your payment. Please refresh in a moment.', 2500);
+            }
+          })();
+        } else {
+          showTimedModal('success', 'Payment Successful', 'An email will be sent to you, onto due date of item delivery', 2000);
+        }
       } else if (status === 'cancelled') {
-        showAlert('Payment was cancelled.', 'warning');
+        showTimedModal('failed', 'Payment Cancelled', 'Your payment was cancelled.', 2000);
       }
 
       if (trackingId) {
