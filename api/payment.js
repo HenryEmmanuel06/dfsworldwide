@@ -217,6 +217,8 @@ async function handleStripeCreate(req, res) {
 
   try { await import('dotenv/config'); } catch (_) {}
 
+  const debug = req.query?.debug === '1' || req.query?.debug === 'true';
+
   const { trackingId, amount, currencyType } = req.body || {};
   if (!trackingId || amount === undefined || amount === null) {
     return res.status(400).json({ error: 'Missing required fields: trackingId, amount' });
@@ -279,7 +281,27 @@ async function handleStripeCreate(req, res) {
         stripe_payment_intent: session.payment_intent ? String(session.payment_intent) : null,
         stripe_customer_id: session.customer ? String(session.customer) : null,
       };
-      try { await supabase.from('payments').insert(paymentRecord); } catch (_) {}
+      const insertRes = await supabase.from('payments').insert(paymentRecord).select('id');
+      if (debug) {
+        // eslint-disable-next-line no-unused-vars
+        const _debug = {
+          has_service_role: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+          insertedCount: Array.isArray(insertRes?.data) ? insertRes.data.length : 0,
+          error: insertRes?.error ? {
+            message: insertRes.error.message,
+            details: insertRes.error.details,
+            hint: insertRes.error.hint,
+            code: insertRes.error.code,
+          } : null,
+        };
+        return res.status(200).json({
+          success: true,
+          provider: 'stripe',
+          checkoutUrl: session.url,
+          sessionId: session.id,
+          debug: _debug,
+        });
+      }
     }
 
     return res.status(200).json({
@@ -320,7 +342,9 @@ async function handleStripeStatus(req, res) {
 
     if (paid) {
       const supabase = getSupabaseAdminClient();
-      if (supabase) {
+      if (!supabase) {
+        if (debugInfo) debugInfo.supabase = { ok: false, reason: 'missing SUPABASE_URL / key' };
+      } else {
         try {
           const nowIso = new Date().toISOString();
           const amountTotal = typeof session.amount_total === 'number' ? (session.amount_total / 100) : null;
@@ -347,21 +371,39 @@ async function handleStripeStatus(req, res) {
             ipn_data: session,
           };
 
-          const update1 = await supabase.from('payments')
-            .update(updatePayload)
-            .or(`payment_id.eq.${String(session.id)},stripe_session_id.eq.${String(session.id)}`)
-            .select('id');
+          // Update matching strategy:
+          // - Some deployments reported PostgREST errors for filtering by `payment_id`.
+          // - Stripe session id is always available, and we also have `order_id` + `tracking_id`.
+          const updateAttempts = [];
+          const attemptUpdate = async (label, qb) => {
+            const r = await qb.update(updatePayload).select('id');
+            const count = Array.isArray(r?.data) ? r.data.length : 0;
+            updateAttempts.push({
+              label,
+              updatedCount: count,
+              error: r?.error ? {
+                message: r.error.message,
+                details: r.error.details,
+                hint: r.error.hint,
+                code: r.error.code,
+              } : null,
+            });
+            return count;
+          };
 
-          const updatedCount = Array.isArray(update1?.data) ? update1.data.length : 0;
+          let updatedCount = 0;
+          updatedCount = await attemptUpdate('stripe_session_id', supabase.from('payments').eq('stripe_session_id', String(session.id)));
+          if (updatedCount === 0 && orderId) {
+            updatedCount = await attemptUpdate('order_id', supabase.from('payments').eq('order_id', String(orderId)));
+          }
+          if (updatedCount === 0 && trackingId) {
+            updatedCount = await attemptUpdate('tracking_id', supabase.from('payments').eq('tracking_id', String(trackingId)));
+          }
+
           if (debugInfo) {
             debugInfo.update = {
               updatedCount,
-              error: update1?.error ? {
-                message: update1.error.message,
-                details: update1.error.details,
-                hint: update1.error.hint,
-                code: update1.error.code,
-              } : null,
+              attempts: updateAttempts,
             };
           }
 
@@ -403,7 +445,14 @@ async function handleStripeStatus(req, res) {
               };
             }
           }
-        } catch (_) {}
+        } catch (e) {
+          if (debugInfo) {
+            debugInfo.exception = {
+              message: e?.message || String(e),
+              stack: e?.stack || null,
+            };
+          }
+        }
       }
     }
 
