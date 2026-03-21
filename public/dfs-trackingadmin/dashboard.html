@@ -225,6 +225,13 @@
     <button onmousedown="event.preventDefault();rteCmd('underline')" title="Underline" style="text-decoration:underline;">U</button>
     <button onmousedown="event.preventDefault();rteCmd('italic')" title="Italic"><i>I</i></button>
     <span class="tb-sep"></span>
+    <button onmousedown="event.preventDefault();rteLink()" title="Insert/Edit Link">Link</button>
+    <button onmousedown="event.preventDefault();rteUnlink()" title="Remove Link">Unlink</button>
+    <span class="tb-sep"></span>
+    <label class="color-wrap" title="Text color">
+      <span>A</span>
+      <input type="color" id="rte-color" value="#000000" onchange="rteCmd('foreColor',this.value)">
+    </label>
     <button onmousedown="event.preventDefault();rteHeading('h3')" title="Heading 3">H3</button>
     <button onmousedown="event.preventDefault();rteHeading('h4')" title="Heading 4">H4</button>
     <button onmousedown="event.preventDefault();rteHeading('h5')" title="Heading 5">H5</button>
@@ -381,6 +388,62 @@
 
     window.rteCmd = function(cmd, val){
       document.execCommand(cmd, false, val || null);
+      rteEditor.focus();
+      updateMailPreview();
+    };
+
+    function getClosestAnchor(node){
+      let n = node;
+      while (n && n !== rteEditor) {
+        if (n.nodeType === 1 && n.tagName && n.tagName.toLowerCase() === 'a') return n;
+        n = n.parentNode;
+      }
+      return null;
+    }
+
+    window.rteLink = function(){
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+
+      const anchor = getClosestAnchor(sel.anchorNode);
+      const currentHref = anchor ? (anchor.getAttribute('href') || '') : '';
+      const urlRaw = window.prompt('Enter link URL', currentHref || 'https://');
+      if (urlRaw === null) return;
+
+      const url = String(urlRaw || '').trim();
+      if (!url) return;
+
+      // Ensure selection exists. If caret is inside an existing link, just update href.
+      if (anchor) {
+        anchor.setAttribute('href', url);
+        anchor.setAttribute('target', '_blank');
+        anchor.setAttribute('rel', 'noopener noreferrer');
+      } else {
+        // createLink requires selected text; if none, do nothing.
+        if (sel.isCollapsed) return;
+        document.execCommand('createLink', false, url);
+        const a2 = getClosestAnchor(sel.anchorNode);
+        if (a2) {
+          a2.setAttribute('target', '_blank');
+          a2.setAttribute('rel', 'noopener noreferrer');
+        }
+      }
+
+      rteEditor.focus();
+      updateMailPreview();
+    };
+
+    window.rteUnlink = function(){
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const anchor = getClosestAnchor(sel.anchorNode);
+      if (anchor) {
+        const parent = anchor.parentNode;
+        while (anchor.firstChild) parent.insertBefore(anchor.firstChild, anchor);
+        parent.removeChild(anchor);
+      } else {
+        document.execCommand('unlink', false, null);
+      }
       rteEditor.focus();
       updateMailPreview();
     };
