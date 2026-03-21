@@ -428,7 +428,17 @@
             <div class="date">${estStr}</div>
           </div>
           <div class="col-md td-cta mt-3 mt-md-0">
-            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#feesModal">See more details</button>
+            <button
+              type="button"
+              class="btn btn-warning"
+              data-bs-toggle="modal"
+              data-bs-target="#feesModal"
+              ${hold ? '' : 'disabled'}
+              style="background:#ffc107;border-color:#ffc107;color:#ffffff;"
+              title="${hold ? 'View fees and payment details' : 'Disabled until goods are on hold'}"
+            >
+              ${hold ? 'See more details' : 'See more details'}
+            </button>
           </div>
         </div>
       `;
