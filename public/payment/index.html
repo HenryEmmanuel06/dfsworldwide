@@ -847,6 +847,7 @@
       if (descText) desc.textContent = descText;
       if (!modalEl.classList.contains('show')) modal.show();
       const ms = typeof autoCloseMs === 'number' ? autoCloseMs : 2000;
+      if (ms <= 0) return;
       setTimeout(() => {
         try { modal.hide(); } catch (_) {}
         cleanupBackdropsIfNoModals();
@@ -1026,7 +1027,7 @@
               const resp = await fetch(`/api/payment-stripe-status?session_id=${encodeURIComponent(stripeSessionId)}`);
               const out = await resp.json();
               if (resp.ok && out && out.paid === true) {
-                showTimedModal('success', 'Payment Successful', 'An email will be sent to you, onto due date of item delivery', 2000);
+                showTimedModal('success', 'Payment Successful', 'An email will be sent to you, onto due date of item delivery', 0);
               } else {
                 showTimedModal('pending', 'Payment Verifying', 'We are still verifying your payment. Please refresh in a moment.', 2500);
               }
