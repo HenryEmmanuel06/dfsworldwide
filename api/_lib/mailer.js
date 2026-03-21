@@ -7,10 +7,11 @@ export async function getTransporter() {
 
   try { await import('dotenv/config'); } catch (_) {}
 
-  const host = process.env.SMTP_HOST;
+  const host = (process.env.SMTP_HOST || '').trim();
   const port = Number(process.env.SMTP_PORT || "465");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const user = (process.env.SMTP_USER || '').trim();
+  // App passwords are often copied with spaces/newlines; remove whitespace to avoid 535 failures.
+  const pass = String(process.env.SMTP_PASS || '').replace(/\s+/g, '');
   const secure = port === 465;
 
   if (!host || !user || !pass) {

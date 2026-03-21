@@ -447,12 +447,12 @@
           </div>
         </div>
 
-        <div class="payment-method disabled" data-method="paypal" onclick="handlePaymentMethodClick(this)">
+        <div class="payment-method" data-method="paypal" onclick="handlePaymentMethodClick(this)">
           <div class="payment-method-header">
             <div class="method-name">
               PayPal
             </div>
-            <span class="method-status status-unavailable">Unavailable</span>
+            <span class="method-status status-available">Available</span>
           </div>
         </div>
 
@@ -611,7 +611,7 @@
       const payButton = document.getElementById('payButton');
       if (selectedMethod === 'crypto' && selectedCrypto) {
         payButton.disabled = false;
-      } else if (selectedMethod === 'stripe') {
+      } else if (selectedMethod === 'stripe' || selectedMethod === 'paypal') {
         payButton.disabled = false;
       } else {
         payButton.disabled = true;
@@ -897,7 +897,7 @@
           showAlert('Please select a cryptocurrency', 'warning');
           return;
         }
-      } else if (selectedMethod === 'stripe') {
+      } else if (selectedMethod === 'stripe' || selectedMethod === 'paypal') {
         // ok
       } else {
         showAlert('Please select a payment method', 'warning');
@@ -916,6 +916,13 @@
         if (selectedMethod === 'stripe') {
           console.log('Initiating Stripe payment:', { trackingId, amount, currencyType: 'USD' });
           response = await fetch('/api/payment-stripe-create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trackingId: trackingId, amount: amount, currencyType: 'USD' })
+          });
+        } else if (selectedMethod === 'paypal') {
+          console.log('Initiating PayPal payment:', { trackingId, amount, currencyType: 'USD' });
+          response = await fetch('/api/payment-paypal-create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ trackingId: trackingId, amount: amount, currencyType: 'USD' })
@@ -977,6 +984,13 @@
             return;
           }
 
+          if (selectedMethod === 'paypal') {
+            const url = data.approvalUrl || data.checkoutUrl || data.url;
+            if (!url) throw new Error('PayPal approval URL missing');
+            window.location.href = url;
+            return;
+          }
+
           // Crypto: display payment details instead of redirecting
           displayPaymentDetails(data);
 
@@ -1019,6 +1033,7 @@
       const status = getParam('status');
       const provider = getParam('provider');
       const stripeSessionId = getParam('session_id');
+      const paypalToken = getParam('token');
       if (status === 'success') {
         if (provider === 'stripe' && stripeSessionId) {
           // Verify session before showing success
@@ -1027,6 +1042,25 @@
               const resp = await fetch(`/api/payment-stripe-status?session_id=${encodeURIComponent(stripeSessionId)}`);
               const out = await resp.json();
               if (resp.ok && out && out.paid === true) {
+                showTimedModal('success', 'Payment Successful', 'An email will be sent to you, onto due date of item delivery', 0);
+              } else {
+                showTimedModal('pending', 'Payment Verifying', 'We are still verifying your payment. Please refresh in a moment.', 2500);
+              }
+            } catch (e) {
+              showTimedModal('pending', 'Payment Verifying', 'We are still verifying your payment. Please refresh in a moment.', 2500);
+            }
+          })();
+        } else if (provider === 'paypal' && paypalToken) {
+          // Capture PayPal order before showing success
+          (async function(){
+            try {
+              const resp = await fetch('/api/payment-paypal-capture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: paypalToken })
+              });
+              const out = await resp.json();
+              if (resp.ok && out && out.completed === true) {
                 showTimedModal('success', 'Payment Successful', 'An email will be sent to you, onto due date of item delivery', 0);
               } else {
                 showTimedModal('pending', 'Payment Verifying', 'We are still verifying your payment. Please refresh in a moment.', 2500);

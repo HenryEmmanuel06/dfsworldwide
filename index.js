@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import paymentHandler from './api/payment.js';
+import paypalHandler from './api/paypal.js';
 import trackingHandler from './api/tracking.js';
 import authHandler from './api/auth.js';
 import adminMailHandler from './api/admin-mail.js';
@@ -99,6 +100,7 @@ async function readBody(req) {
 
 function routeApi(pathname) {
   if (pathname === '/api/payment' || pathname === '/api/payment/') return paymentHandler;
+  if (pathname === '/api/paypal' || pathname === '/api/paypal/' || pathname === '/api/paypal/webhook') return paypalHandler;
   if (pathname === '/api/tracking' || pathname === '/api/tracking/') return trackingHandler;
   if (pathname === '/api/auth' || pathname === '/api/auth/') return authHandler;
   if (pathname === '/api/admin-mail' || pathname === '/api/admin-mail/') return adminMailHandler;

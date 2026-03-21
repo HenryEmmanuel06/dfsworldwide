@@ -7,6 +7,9 @@
     { "source": "/api/payment-create", "destination": "/api/payment?_action=create" },
     { "source": "/api/payment-stripe-create", "destination": "/api/payment?_action=stripe-create" },
     { "source": "/api/payment-stripe-status", "destination": "/api/payment?_action=stripe-status" },
+    { "source": "/api/payment-paypal-create", "destination": "/api/paypal?_action=create-order" },
+    { "source": "/api/payment-paypal-capture", "destination": "/api/paypal?_action=capture" },
+    { "source": "/api/paypal/webhook", "destination": "/api/paypal?_action=webhook" },
     { "source": "/api/payment-ipn",    "destination": "/api/payment?_action=ipn" },
     { "source": "/api/payment-status", "destination": "/api/payment?_action=status" }
   ]
