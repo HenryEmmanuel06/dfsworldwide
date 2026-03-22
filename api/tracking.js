@@ -53,38 +53,165 @@ function computeStage(tr) {
   return { activeIndex, hold, progressPct, statusHeadline, statusMessage };
 }
 
-export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    const tid = (req.query.tid || req.query.id || '').toString().trim();
-    if (!tid) return res.status(400).json({ error: 'Missing tid' });
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-    );
-    const { data, error } = await supabase
-      .from('tracking')
-      .select('*')
-      .ilike('tracking_id', tid)
-      .single();
-    if (error) return res.status(404).json({ error: 'Tracking ID not found' });
-    return res.status(200).json({ tracking: data, stage: computeStage(data) });
-  }
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+  );
+}
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
+async function requireAdmin(req) {
   const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'dfsworldwide.info@gmail.com').toLowerCase();
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  if (!token) {
+    const e = new Error('Unauthorized');
+    e.statusCode = 401;
+    throw e;
+  }
 
   const supabaseAuth = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: `Bearer ${token}` } }
   });
 
   const { data: userData, error: userErr } = await supabaseAuth.auth.getUser();
-  if (userErr || !userData?.user) return res.status(401).json({ error: userErr?.message || 'Unauthorized' });
+  if (userErr || !userData?.user) {
+    const e = new Error(userErr?.message || 'Unauthorized');
+    e.statusCode = 401;
+    throw e;
+  }
 
   const email = (userData.user.email || '').toLowerCase();
-  if (email !== ADMIN_EMAIL) return res.status(403).json({ error: 'Forbidden' });
+  if (email !== ADMIN_EMAIL) {
+    const e = new Error('Forbidden');
+    e.statusCode = 403;
+    throw e;
+  }
+
+  return { token, user: userData.user };
+}
+
+function parseMoney(val) {
+  if (val === undefined || val === null || val === '') return null;
+  const n = Number(val);
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function computeAmountFromSummary(summaryPrices) {
+  return Math.round(summaryPrices.reduce((acc, v) => acc + (Number.isFinite(v) ? v : 0), 0) * 100) / 100;
+}
+
+function extractSummaryFromBody(body) {
+  const b = body || {};
+  const titles = [1, 2, 3, 4, 5, 6].map((i) => b[`summary_title_${i}`]);
+  const subtitles = [1, 2, 3, 4, 5, 6].map((i) => b[`summary_subtitle_${i}`]);
+  const prices = [1, 2, 3, 4, 5, 6].map((i) => parseMoney(b[`summary_${i}_price`]));
+
+  const anyFilled = titles.some((t) => String(t || '').trim() !== '') || prices.some((p) => p !== null) || subtitles.some((s) => String(s || '').trim() !== '');
+  const amount = computeAmountFromSummary(prices.map((p) => (p === null ? 0 : p)));
+
+  const summaryPayload = {};
+  for (let i = 1; i <= 6; i++) {
+    const t = titles[i - 1];
+    const st = subtitles[i - 1];
+    const pr = prices[i - 1];
+    if (t !== undefined) summaryPayload[`summary_title_${i}`] = (t === null ? null : String(t).trim()) || null;
+    if (st !== undefined) summaryPayload[`summary_subtitle_${i}`] = (st === null ? null : String(st).trim()) || null;
+    if (b[`summary_${i}_price`] !== undefined) summaryPayload[`summary_${i}_price`] = pr;
+  }
+
+  return { anyFilled, amount, summaryPayload };
+}
+
+export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    const action = (req.query._action || '').toString();
+    if (action === 'list') {
+      try {
+        await requireAdmin(req);
+        const q = (req.query.q || '').toString().trim();
+        const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+        const supabase = getSupabaseAdmin();
+
+        let query = supabase
+          .from('tracking')
+          .select('tracking_id, recipient_email, recipient_name, created_at, amount, status, delivery_date')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (q) {
+          const like = `%${q}%`;
+          query = query.or(`tracking_id.ilike.${like},recipient_email.ilike.${like}`);
+        }
+
+        const { data, error } = await query;
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ items: data || [] });
+      } catch (e) {
+        return res.status(e.statusCode || 500).json({ error: e?.message || 'Failed' });
+      }
+    }
+
+    const tid = (req.query.tid || req.query.id || '').toString().trim();
+    if (!tid) return res.status(400).json({ error: 'Missing tid' });
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('tracking')
+      .select('*')
+      .ilike('tracking_id', tid)
+      .single();
+    if (error) return res.status(404).json({ error: 'Tracking ID not found' });
+
+    const stage = computeStage(data);
+
+    // Persist hold status so admin dashboard reflects it (was previously frontend-only).
+    // Avoid overriding a terminal status like delivered.
+    try {
+      const currentStatus = String(data?.status || '').toLowerCase().trim();
+      const isDelivered = currentStatus === 'delivered' || currentStatus === 'success' || currentStatus === 'completed';
+      const isHold = currentStatus === 'hold' || currentStatus === 'on hold' || currentStatus === 'on_hold';
+      if (stage?.hold && !isDelivered && !isHold) {
+        await supabase
+          .from('tracking')
+          .update({ status: 'hold', status_message: 'On Hold' })
+          .eq('tracking_id', data.tracking_id);
+        data.status = 'hold';
+        data.status_message = 'On Hold';
+      }
+    } catch (_) {}
+
+    return res.status(200).json({ tracking: data, stage });
+  }
+
+  const action = (req.query._action || '').toString();
+  if (action === 'update') {
+    if (req.method !== 'POST' && req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
+    try {
+      await requireAdmin(req);
+      const tracking_id = String(req.body?.tracking_id || req.body?.tid || '').trim();
+      if (!tracking_id) return res.status(400).json({ error: 'Missing tracking_id' });
+
+      const { anyFilled, amount, summaryPayload } = extractSummaryFromBody(req.body || {});
+      if (!anyFilled) return res.status(400).json({ error: 'At least one summary item is required' });
+
+      const supabaseAdmin = getSupabaseAdmin();
+      const { data, error } = await supabaseAdmin
+        .from('tracking')
+        .update({ ...summaryPayload, amount })
+        .eq('tracking_id', tracking_id)
+        .select('tracking_id')
+        .single();
+
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ ok: true, tracking_id: data?.tracking_id || tracking_id, amount });
+    } catch (e) {
+      return res.status(e.statusCode || 500).json({ error: e?.message || 'Failed' });
+    }
+  }
+
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { user } = await requireAdmin(req);
 
   // Validate required fields from body
   const {
@@ -121,10 +248,12 @@ export default async function handler(req, res) {
   }
 
   const tracking_id = generateTrackingId();
-  const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-  );
+  const supabaseAdmin = getSupabaseAdmin();
+
+  const { anyFilled, amount: computedAmount, summaryPayload } = extractSummaryFromBody(req.body || {});
+  if (!anyFilled) {
+    return res.status(400).json({ error: 'At least one summary item is required' });
+  }
 
   let persisted = true;
   let persistError = null;
@@ -138,7 +267,7 @@ export default async function handler(req, res) {
       .from('tracking')
       .insert({
         tracking_id,
-        created_by: userData.user.id,
+        created_by: user.id,
         from_location: String(fromField).trim(),
         to_location: String(toField).trim(),
         port1: String(port1).trim(),
@@ -152,7 +281,9 @@ export default async function handler(req, res) {
         recipient_email: String(recipient_email).trim(),
         shipment_description: String(shipment_description).trim(),
         sender_fullname: String(sender_fullname).trim(),
-        delivery_date: d.toISOString()
+        delivery_date: d.toISOString(),
+        ...summaryPayload,
+        amount: computedAmount
       });
     if (insErr) { persisted = false; persistError = insErr.message; }
   } catch (e) {

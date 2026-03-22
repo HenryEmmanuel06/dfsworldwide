@@ -32,31 +32,163 @@
     #rte-toolbar label.color-wrap{ display:flex; align-items:center; padding:2px 6px; border-radius:5px; cursor:pointer; gap:4px; color:#e2e8f0; font-size:12px; }
     #rte-toolbar label.color-wrap:hover{ background:rgba(255,255,255,0.15); }
     #rte-toolbar input[type=color]{ width:18px; height:18px; border:none; border-radius:3px; cursor:pointer; padding:0; background:none; }
+
+    .dash-shell{ display:flex; min-height: calc(100vh - 56px); }
+    .dash-sidebar{ width:260px; background:#0b1a2a; color:#e5e7eb; padding:18px 14px; position:sticky; top:0px; height: 100vh; }
+    .dash-brand{ font-weight:800; letter-spacing:0.2px; margin:0 0 18px 0; font-size:14px; opacity:0.95; }
+    .dash-nav{ display:flex; flex-direction:column; gap:8px; }
+    .dash-link{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:#e5e7eb; text-decoration:none; font-weight:600; font-size:13px; }
+    .dash-link:hover{ background:rgba(255,255,255,0.08); color:#ffffff; }
+    .dash-link.active{ background:rgba(255,255,255,0.12); color:#ffffff; }
+    .dash-sidebar-footer{ position:absolute; left:14px; right:14px; bottom:16px; }
+    .dash-sidebar-footer .meta{ font-size:12px; opacity:0.85; margin-bottom:10px; }
+    .dash-sidebar-footer .btn{ width:100%; }
+    .dash-main{ flex:1; background:#f3f4f6; padding:24px; }
+    .page-title{ font-weight:800; color:#0f172a; margin-bottom:4px; }
+    .page-subtitle{ color:#6b7280; font-size:13px; margin-bottom:18px; }
+    .stat-grid{ display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:14px; }
+    .stat-card{ background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:14px 16px; }
+    .stat-label{ font-size:12px; color:#6b7280; }
+    .stat-value{ font-size:22px; font-weight:900; color:#0f172a; margin-top:2px; }
+    .section-card{ background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; box-shadow:0 1px 2px rgba(15, 23, 42, 0.04); }
+    .section-card + .section-card{ margin-top:14px; }
+    .tracking-list{ max-height: 520px; overflow:auto; border-radius:12px; border:1px solid #e5e7eb; }
+    .tracking-list table{ font-size: 12px; margin:0; }
+    .tracking-list td, .tracking-list th{ vertical-align: middle; padding:10px 10px; }
+    .summary-grid{ display:grid; grid-template-columns: 1.2fr 1.6fr 140px; gap:10px; }
+    .page{ display:none; }
+    .page.active{ display:block; }
+    @media (max-width: 992px) {
+      .dash-shell{ display:block; }
+      .dash-sidebar{ width:auto; height:auto; position:static; top:auto; }
+      .dash-sidebar-footer{ position:static; margin-top:18px; }
+      .dash-main{ padding:18px; }
+      .stat-grid{ grid-template-columns: 1fr; }
+      .summary-grid{ grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-light bg-light">
-    <div class="container">
-      <span class="navbar-brand mb-0 h1"><img style="width: 200px;" src="../assets/images/dfs-worldwide-logo.webp" alt="DFS Logo"></span>
-      <div>
-        <span id="adminEmail" class="me-3 text-muted small"></span>
-        <button id="logoutBtn" class="btn btn-outline-secondary btn-sm">Logout</button>
-      </div>
-    </div>
-  </nav>
+  <main class="container-fluid px-0">
+    <div class="dash-shell">
+      <aside class="dash-sidebar">
+        <div class="dash-brand">DFS Admin</div>
+        <nav class="dash-nav">
+          <a href="#dashboard" class="dash-link active" data-page="dashboard">Dashboard</a>
+          <a href="#tracking" class="dash-link" data-page="tracking">Tracking IDs</a>
+          <a href="#payments" class="dash-link" data-page="payments">Payments</a>
+          <a href="#emails" class="dash-link" data-page="emails">Emails</a>
+        </nav>
+        <div class="dash-sidebar-footer">
+          <div class="meta">
+            <div class="text-muted" style="color:rgba(229,231,235,0.85) !important;">Signed in as</div>
+            <div id="adminEmail" style="font-weight:700; word-break:break-all;"></div>
+          </div>
+          <button id="logoutBtn" class="btn btn-danger">Logout</button>
+        </div>
+      </aside>
 
-  <main class="container py-5">
-    <div class="card shadow">
-      <div class="card-body">
-        <h1 class="h4 mb-3">Create Tracking ID</h1>
-        <p class="text-muted small">Click the button to open the form. All fields are required. After submission a tracking ID will be generated.</p>
-        <button id="openModalBtn" class="btn" style="background-color: #ffc107;" type="button">Get Tracking ID</button>
-        <div id="result" class="alert d-none mt-3"></div>
-      </div>
-    </div>
+      <section class="dash-main">
+        <div id="page-dashboard" class="page active">
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">Overview of your content and payments.</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Tracking IDs</div>
+              <div class="stat-value" id="statTotalTracking">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Amount (USD)</div>
+              <div class="stat-value" id="statTotalAmount">0.00</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Pending Summary Updates</div>
+              <div class="stat-value" id="statPending">0</div>
+            </div>
+          </div>
+          <div class="section-card" style="margin-top:14px;">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <div style="font-weight:800;color:#0f172a;">Quick actions</div>
+                <div class="text-muted" style="font-size:12px;">Create new tracking IDs or manage existing ones.</div>
+              </div>
+              <button id="openModalBtn" class="btn" style="background-color: #ffc107;" type="button">Create Tracking ID</button>
+            </div>
+            <div id="result" class="alert d-none mt-3"></div>
+          </div>
+        </div>
 
-    <div class="card shadow mt-4 email-card">
-      <div class="card-body">
+        <div id="page-payments" class="page">
+          <div class="page-title">Payments</div>
+          <div class="page-subtitle">View payment history and statuses.</div>
+
+          <div class="section-card">
+            <div class="d-flex align-items-center justify-content-between">
+              <div style="font-weight:800;color:#0f172a;">All Payments</div>
+            </div>
+            <div class="mt-3">
+              <input id="paymentsSearchInput" class="form-control form-control-sm" placeholder="Search by tracking id, provider, status" />
+            </div>
+            <div class="tracking-list mt-3" style="max-height:640px;">
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Provider</th>
+                    <th>Status</th>
+                    <th class="text-end">Amount</th>
+                    <th>Tracking ID</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentsListBody">
+                  <tr><td colspan="5" class="text-muted">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="page-tracking" class="page">
+          <div class="page-title">Tracking IDs</div>
+          <div class="page-subtitle">List, search, and edit summary details for each tracking ID.</div>
+
+          <div class="section-card">
+            <div class="row g-3">
+              <div class="col">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div style="font-weight:800;color:#0f172a;">All Tracking IDs</div>
+                  <button class="btn btn-sm" style="background-color:#ffc107;" type="button" id="newTrackingBtn">New</button>
+                </div>
+                <div class="mt-3">
+                  <input id="trackSearchInput" class="form-control form-control-sm" placeholder="Search by tracking id or email" />
+                </div>
+                <div class="tracking-list mt-3">
+                  <table class="table table-sm table-hover">
+                    <thead>
+                      <tr>
+                        <th>Tracking ID</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Delivery Date</th>
+                        <th class="text-end">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody id="trackingListBody">
+                      <tr><td colspan="5" class="text-muted">Loading...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="page-emails" class="page">
+          <div class="page-title">Emails</div>
+          <div class="page-subtitle">Compose and preview emails before sending.</div>
+
+          <div class="section-card">
+            <div class="card-body" style="padding:0;">
         <h2 class="h5 mb-3">Send Email</h2>
         <div class="row g-3">
           <div class="col-lg-5">
@@ -117,7 +249,10 @@
             </div>
           </div>
         </div>
-      </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
 
@@ -208,6 +343,19 @@
                 <textarea class="form-control" id="shipment_description" rows="3" required></textarea>
                 <div class="invalid-feedback">Required.</div>
               </div>
+
+              <div class="col-12">
+                <hr class="my-2" />
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <div style="font-weight:700;">Summary details (6 slots)</div>
+                    <div class="text-muted small">At least one item required. Prices are in USD.</div>
+                  </div>
+                  <div class="small text-muted">Total: $<span id="createTotal">0.00</span></div>
+                </div>
+              </div>
+
+              <div class="col-12" id="createSummaryGrid"></div>
             </div>
           </div>
           <div class="modal-footer">
@@ -215,6 +363,34 @@
             <button type="submit" id="submitTrackingBtn" class="btn" style="background-color: #ffc107;">Generate Tracking ID</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Summary Modal -->
+  <div class="modal fade" id="editSummaryModal" tabindex="-1" aria-labelledby="editSummaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editSummaryModalLabel">Edit Summary</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-muted" style="font-size:12px;">Edit the 6-slot summary for this tracking ID.</div>
+          <div class="mt-3">
+            <label class="form-label small text-muted">Tracking ID</label>
+            <input id="edit_tracking_id" class="form-control form-control-sm" readonly />
+          </div>
+          <div class="mt-2" id="editSummaryGrid"></div>
+        </div>
+        <div class="modal-footer d-flex align-items-center justify-content-between">
+          <div class="small text-muted">Total: $<span id="editTotal">0.00</span></div>
+          <div class="d-flex align-items-center gap-2">
+            <div id="saveSummaryResult" class="small"></div>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button id="saveSummaryBtn" type="button" class="btn" style="background-color:#ffc107;">Save</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -253,6 +429,91 @@
     const LOGIN_URL = '/dfs-trackingadmin/';
     const ADMIN_EMAIL = 'dfsworldwide.info@gmail.com';
 
+    function parseMoney(val){
+      if(val === undefined || val === null) return null;
+      const s = String(val).trim();
+      if(!s) return null;
+      const n = Number(s);
+      if(!Number.isFinite(n)) return null;
+      return Math.round(n * 100) / 100;
+    }
+
+    function computeTotalFromInputs(prefix){
+      let total = 0;
+      for(let i=1;i<=6;i++){
+        const el = document.getElementById(prefix + 'summary_' + i + '_price');
+        const v = parseMoney(el ? el.value : null);
+        if(v !== null) total += v;
+      }
+      return Math.round(total * 100) / 100;
+    }
+
+    function renderSummaryGrid(containerEl, prefix, defaults){
+      if(!containerEl) return;
+      containerEl.innerHTML = '';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'summary-grid';
+
+      for(let i=1;i<=6;i++){
+        const def = (defaults && defaults[i]) ? defaults[i] : {};
+
+        const title = document.createElement('input');
+        title.className = 'form-control form-control-sm';
+        title.placeholder = `Title ${i}`;
+        title.id = prefix + `summary_title_${i}`;
+        title.value = def.title || '';
+
+        const subtitle = document.createElement('input');
+        subtitle.className = 'form-control form-control-sm';
+        subtitle.placeholder = `Subtitle ${i}`;
+        subtitle.id = prefix + `summary_subtitle_${i}`;
+        subtitle.value = def.subtitle || '';
+
+        const price = document.createElement('input');
+        price.className = 'form-control form-control-sm';
+        price.placeholder = `Price ${i}`;
+        price.type = 'number';
+        price.step = '0.01';
+        price.min = '0';
+        price.id = prefix + `summary_${i}_price`;
+        price.value = (def.price !== undefined && def.price !== null) ? String(def.price) : '';
+
+        wrap.appendChild(title);
+        wrap.appendChild(subtitle);
+        wrap.appendChild(price);
+      }
+
+      containerEl.appendChild(wrap);
+    }
+
+    function updateTotals(){
+      try {
+        const total = computeTotalFromInputs('create_');
+        const el = document.getElementById('createTotal');
+        if(el) el.textContent = total.toFixed(2);
+      } catch (_) {}
+      try {
+        const total = computeTotalFromInputs('edit_');
+        const el = document.getElementById('editTotal');
+        if(el) el.textContent = total.toFixed(2);
+      } catch (_) {}
+    }
+
+    function bindSummaryInputEvents(prefix){
+      for(let i=1;i<=6;i++){
+        const el = document.getElementById(prefix + 'summary_' + i + '_price');
+        if(el) el.addEventListener('input', updateTotals);
+      }
+    }
+
+    const DEFAULT_SUMMARY = {
+      1: { title: 'Courier Shipping Fee:', subtitle: 'United States', price: 20.00 },
+      2: { title: 'Packaging and Handling Fee:', subtitle: 'Fragile packing, handling and items.', price: 10.00 },
+      3: { title: 'Insurance:', subtitle: 'Protects package lost, damaged, or delayed', price: 10.00 },
+      4: { title: 'Customs Duties & Taxes:', subtitle: 'Government charges based on your items.', price: 10.00 },
+    };
+
     function logout(){
       localStorage.removeItem('admin_token');
       window.location.replace(LOGIN_URL);
@@ -273,10 +534,49 @@
 
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
+    function setActivePage(pageKey){
+      document.querySelectorAll('.dash-link').forEach((a)=>{
+        a.classList.toggle('active', a.getAttribute('data-page') === pageKey);
+      });
+      document.querySelectorAll('.page').forEach((p)=> p.classList.remove('active'));
+      const el = document.getElementById('page-' + pageKey);
+      if(el) el.classList.add('active');
+    }
+
+    function routeFromHash(){
+      const raw = (window.location.hash || '').replace('#', '').trim();
+      const key = raw || 'dashboard';
+      if(['dashboard','tracking','payments','emails'].includes(key)) setActivePage(key);
+      else setActivePage('dashboard');
+    }
+
+    document.querySelectorAll('.dash-link').forEach((a)=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const key = a.getAttribute('data-page');
+        if(key) window.location.hash = key;
+      });
+    });
+
+    window.addEventListener('hashchange', routeFromHash);
+
     const openBtn = document.getElementById('openModalBtn');
     const modalEl = document.getElementById('trackingModal');
     const modal = new bootstrap.Modal(modalEl);
     openBtn.addEventListener('click', ()=> modal.show());
+
+    const newTrackingBtn = document.getElementById('newTrackingBtn');
+    if (newTrackingBtn) {
+      newTrackingBtn.addEventListener('click', ()=> {
+        setActivePage('tracking');
+        modal.show();
+      });
+    }
+
+    // Render create summary inputs with defaults
+    renderSummaryGrid(document.getElementById('createSummaryGrid'), 'create_', DEFAULT_SUMMARY);
+    bindSummaryInputEvents('create_');
+    updateTotals();
 
     const form = document.getElementById('trackingModalForm');
     form.addEventListener('submit', async (e)=>{
@@ -311,6 +611,13 @@
         delivery_date: document.getElementById('delivery_date').value
       };
 
+      for(let i=1;i<=6;i++){
+        payload[`summary_title_${i}`] = (document.getElementById(`create_summary_title_${i}`)?.value || '').trim() || null;
+        payload[`summary_subtitle_${i}`] = (document.getElementById(`create_summary_subtitle_${i}`)?.value || '').trim() || null;
+        const p = parseMoney(document.getElementById(`create_summary_${i}_price`)?.value);
+        payload[`summary_${i}_price`] = p;
+      }
+
       try{
         const res = await fetch('/api/tracking', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(payload) });
         const data = await res.json();
@@ -337,6 +644,11 @@
         }
         form.reset();
         form.classList.remove('was-validated');
+
+        // restore defaults for summary
+        renderSummaryGrid(document.getElementById('createSummaryGrid'), 'create_', DEFAULT_SUMMARY);
+        bindSummaryInputEvents('create_');
+        updateTotals();
       }catch(err){
         resEl.className='alert alert-danger';
         resEl.textContent = 'Network error';
@@ -381,6 +693,245 @@
     document.getElementById('mail_subject').addEventListener('input', updateMailPreview);
     document.getElementById('mail_body').addEventListener('input', updateMailPreview);
     updateMailPreview();
+
+    // Tracking list + summary editing
+    const trackingListBody = document.getElementById('trackingListBody');
+    const trackSearchInput = document.getElementById('trackSearchInput');
+    const editTrackingIdEl = document.getElementById('edit_tracking_id');
+    const saveSummaryBtn = document.getElementById('saveSummaryBtn');
+    const saveSummaryResult = document.getElementById('saveSummaryResult');
+
+    renderSummaryGrid(document.getElementById('editSummaryGrid'), 'edit_', {});
+    bindSummaryInputEvents('edit_');
+    updateTotals();
+
+    let listTimer = null;
+    let paymentsTimer = null;
+
+    function isSuccessfulPaymentStatus(status){
+      const s = String(status || '').toLowerCase().trim();
+      return s === 'success' || s === 'completed' || s === 'finished' || s === 'paid';
+    }
+
+    function pickPaymentAmount(p){
+      const n = (p === null || p === undefined || p === '') ? null : Number(p);
+      return (n !== null && Number.isFinite(n)) ? n : 0;
+    }
+
+    async function loadPaymentsList(){
+      const token = await requireSession();
+      if(!token) return;
+
+      const paymentsListBody = document.getElementById('paymentsListBody');
+      const paymentsSearchInput = document.getElementById('paymentsSearchInput');
+      const q = (paymentsSearchInput?.value || '').trim();
+
+      try{
+        const url = `/api/payment?_action=list&limit=200${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        const data = await res.json();
+        const items = Array.isArray(data?.items) ? data.items : [];
+
+        // Dashboard stats: sum only successful payments
+        try {
+          let sumPaid = 0;
+          for (const it of items) {
+            if (isSuccessfulPaymentStatus(it.payment_status)) {
+              sumPaid += pickPaymentAmount(it.price_amount);
+            }
+          }
+          const totalAmountEl = document.getElementById('statTotalAmount');
+          if (totalAmountEl) totalAmountEl.textContent = sumPaid.toFixed(2);
+        } catch (_) {}
+
+        if(!paymentsListBody) return;
+        if(!items.length){
+          paymentsListBody.innerHTML = '<tr><td colspan="5" class="text-muted">No payments found.</td></tr>';
+          return;
+        }
+
+        const fmtDate = (iso) => {
+          try {
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleString();
+          } catch (_) { return ''; }
+        };
+
+        paymentsListBody.innerHTML = items.map((it)=>{
+          const created = fmtDate(it.created_at);
+          const provider = escapeHtml(it.provider || '');
+          const status = escapeHtml(it.payment_status || '');
+          const amount = pickPaymentAmount(it.price_amount);
+          const amountStr = amount.toFixed(2);
+          const tid = escapeHtml(it.tracking_id || '');
+
+          return `<tr>
+            <td>${escapeHtml(created)}</td>
+            <td>${provider}</td>
+            <td>${status}</td>
+            <td class="text-end">$${amountStr}</td>
+            <td class="code">${tid}</td>
+          </tr>`;
+        }).join('');
+      }catch(_){
+        if(paymentsListBody) paymentsListBody.innerHTML = '<tr><td colspan="5" class="text-danger">Failed to load.</td></tr>';
+      }
+    }
+
+    async function loadTrackingList(){
+      const token = await requireSession();
+      if(!token) return;
+      const q = (trackSearchInput?.value || '').trim();
+      try{
+        const url = `/api/tracking?_action=list&limit=100${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        const data = await res.json();
+        const items = Array.isArray(data?.items) ? data.items : [];
+
+        try {
+          const totalCountEl = document.getElementById('statTotalTracking');
+          const pendingEl = document.getElementById('statPending');
+          if (totalCountEl) totalCountEl.textContent = String(items.length);
+
+          let pending = 0;
+          for (const it of items) {
+            const amt = (it.amount === null || it.amount === undefined || it.amount === '') ? null : Number(it.amount);
+            if (amt === null || !Number.isFinite(amt) || amt <= 0) pending += 1;
+          }
+          if (pendingEl) pendingEl.textContent = String(pending);
+        } catch (_) {}
+
+        if(!trackingListBody) return;
+        if(!items.length){
+          trackingListBody.innerHTML = '<tr><td colspan="5" class="text-muted">No tracking IDs found.</td></tr>';
+          return;
+        }
+
+        const fmtDate = (iso) => {
+          try {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return '—';
+            return d.toLocaleDateString();
+          } catch (_) { return '—'; }
+        };
+
+        trackingListBody.innerHTML = items.map((it)=>{
+          const tid = escapeHtml(it.tracking_id || '');
+          const email = escapeHtml(it.recipient_email || '');
+          const st = escapeHtml(it.status || '');
+          const del = fmtDate(it.delivery_date);
+          const amt = (it.amount === null || it.amount === undefined || it.amount === '') ? 0 : Number(it.amount);
+          const amtStr = (Number.isFinite(amt) ? amt : 0).toFixed(2);
+          return `<tr data-tid="${tid}" style="cursor:pointer;">
+            <td class="code">${tid}</td>
+            <td>${email}</td>
+            <td>${st || '—'}</td>
+            <td>${escapeHtml(del)}</td>
+            <td class="text-end">$${amtStr}</td>
+          </tr>`;
+        }).join('');
+      }catch(_){
+        if(trackingListBody) trackingListBody.innerHTML = '<tr><td colspan="5" class="text-danger">Failed to load.</td></tr>';
+      }
+    }
+
+    async function loadTrackingIntoEditor(tid){
+      if(!tid) return;
+      if(editTrackingIdEl) editTrackingIdEl.value = tid;
+      saveSummaryResult.className = 'small mt-2';
+      saveSummaryResult.textContent = '';
+      try{
+        const res = await fetch('/api/tracking-get?tid=' + encodeURIComponent(tid));
+        const data = await res.json();
+        const t = data?.tracking || {};
+        for(let i=1;i<=6;i++){
+          const titleEl = document.getElementById(`edit_summary_title_${i}`);
+          const subtitleEl = document.getElementById(`edit_summary_subtitle_${i}`);
+          const priceEl = document.getElementById(`edit_summary_${i}_price`);
+          if(titleEl) titleEl.value = (t[`summary_title_${i}`] || '');
+          if(subtitleEl) subtitleEl.value = (t[`summary_subtitle_${i}`] || '');
+          const p = t[`summary_${i}_price`];
+          if(priceEl) priceEl.value = (p === null || p === undefined) ? '' : String(p);
+        }
+        updateTotals();
+      }catch(_){
+        // ignore
+      }
+    }
+
+    if(trackingListBody){
+      trackingListBody.addEventListener('click', (e)=>{
+        const tr = e.target.closest('tr[data-tid]');
+        if(!tr) return;
+        const tid = tr.getAttribute('data-tid');
+        loadTrackingIntoEditor(tid);
+        try {
+          const mEl = document.getElementById('editSummaryModal');
+          if (mEl && window.bootstrap?.Modal) {
+            const modal = window.bootstrap.Modal.getOrCreateInstance(mEl);
+            modal.show();
+          }
+        } catch (_) {}
+      });
+    }
+
+    if(trackSearchInput){
+      trackSearchInput.addEventListener('input', ()=>{
+        if(listTimer) clearTimeout(listTimer);
+        listTimer = setTimeout(loadTrackingList, 350);
+      });
+    }
+
+    const paymentsSearchInput = document.getElementById('paymentsSearchInput');
+    if(paymentsSearchInput){
+      paymentsSearchInput.addEventListener('input', ()=>{
+        if(paymentsTimer) clearTimeout(paymentsTimer);
+        paymentsTimer = setTimeout(loadPaymentsList, 350);
+      });
+    }
+
+    if(saveSummaryBtn){
+      saveSummaryBtn.addEventListener('click', async ()=>{
+        const tid = (editTrackingIdEl?.value || '').trim();
+        if(!tid){
+          saveSummaryResult.className = 'small mt-2 text-danger';
+          saveSummaryResult.textContent = 'Select a tracking ID first.';
+          return;
+        }
+        const token = await requireSession();
+        if(!token) return;
+        const payload = { tracking_id: tid };
+        for(let i=1;i<=6;i++){
+          payload[`summary_title_${i}`] = (document.getElementById(`edit_summary_title_${i}`)?.value || '').trim() || null;
+          payload[`summary_subtitle_${i}`] = (document.getElementById(`edit_summary_subtitle_${i}`)?.value || '').trim() || null;
+          payload[`summary_${i}_price`] = parseMoney(document.getElementById(`edit_summary_${i}_price`)?.value);
+        }
+
+        saveSummaryBtn.disabled = true;
+        const original = saveSummaryBtn.textContent;
+        saveSummaryBtn.textContent = 'Saving...';
+        try{
+          const res = await fetch('/api/tracking?_action=update', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(payload) });
+          const out = await res.json();
+          if(!res.ok){
+            saveSummaryResult.className = 'small mt-2 text-danger';
+            saveSummaryResult.textContent = out.error || 'Failed to save.';
+            return;
+          }
+          saveSummaryResult.className = 'small mt-2 text-success';
+          saveSummaryResult.textContent = 'Saved.';
+          await loadTrackingList();
+        }catch(_){
+          saveSummaryResult.className = 'small mt-2 text-danger';
+          saveSummaryResult.textContent = 'Network error.';
+        } finally {
+          saveSummaryBtn.disabled = false;
+          saveSummaryBtn.textContent = original;
+        }
+      });
+    }
 
     /* ── Rich Text Toolbar ── */
     const rteEditor = document.getElementById('mail_body');
@@ -580,7 +1131,12 @@
     });
 
     // initial auth check
-    requireSession();
+    (async function(){
+      await requireSession();
+      await loadTrackingList();
+      await loadPaymentsList();
+      routeFromHash();
+    })();
   })();
   </script>
 </body>

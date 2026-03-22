@@ -569,7 +569,8 @@
     let selectedMethod = null;
     let selectedCrypto = null;
     let trackingId = null;
-    let amount = 50.00; // Default amount, can be dynamic
+    let amount = 50.00; // Default amount
+    let amountLoaded = false;
     let paymentData = null; // Store payment response data
     let expirationInterval = null; // For countdown timer
 
@@ -609,6 +610,10 @@
 
     function updatePayButton() {
       const payButton = document.getElementById('payButton');
+      if (!amountLoaded) {
+        payButton.disabled = true;
+        return;
+      }
       if (selectedMethod === 'crypto' && selectedCrypto) {
         payButton.disabled = false;
       } else if (selectedMethod === 'stripe' || selectedMethod === 'paypal') {
@@ -1028,6 +1033,39 @@
     // Initialize page
     (function() {
       trackingId = getParam('tid');
+
+      // If we have a trackingId, don't show a default amount before loading
+      if (trackingId) {
+        amountLoaded = false;
+        try {
+          document.getElementById('amountValue').textContent = '—';
+        } catch (_) {}
+        updatePayButton();
+      } else {
+        amountLoaded = true;
+      }
+
+      // Fetch tracking record to determine amount
+      if (trackingId) {
+        (async function(){
+          try {
+            const resp = await fetch(`/api/tracking-get?tid=${encodeURIComponent(trackingId)}`);
+            if (!resp.ok) throw new Error('Tracking ID not found');
+            const out = await resp.json();
+            const dbAmount = out?.tracking?.amount;
+            const n = (dbAmount === null || dbAmount === undefined || dbAmount === '') ? null : Number(dbAmount);
+            if (n !== null && Number.isFinite(n) && n > 0) amount = n;
+            amountLoaded = true;
+          } catch (_) {}
+          try {
+            if (!amountLoaded) {
+              showAlert('Unable to load amount for this tracking ID. Please check the tracking ID and try again.', 'danger');
+            }
+            document.getElementById('amountValue').textContent = amountLoaded ? amount.toFixed(2) : '—';
+          } catch (_) {}
+          updatePayButton();
+        })();
+      }
       
       // Check if redirected from payment (success/cancelled)
       const status = getParam('status');
@@ -1083,8 +1121,10 @@
         showAlert('Tracking ID is required', 'danger');
       }
 
-      // Set default amount (can be fetched from API if needed)
-      document.getElementById('amountValue').textContent = amount.toFixed(2);
+      // Set amount display (already set to placeholder when trackingId exists)
+      if (!trackingId) {
+        document.getElementById('amountValue').textContent = amount.toFixed(2);
+      }
 
       // Ensure backdrops are cleaned when modal is hidden
       const modalEl = document.getElementById('paymentStatusModal');

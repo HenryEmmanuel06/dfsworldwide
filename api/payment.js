@@ -40,6 +40,65 @@ function getSupabaseAdminClient() {
   return createClient(supabaseUrl, supabaseKey, { db: { schema: 'public' }, auth: { persistSession: false } });
 }
 
+async function requireAdmin(req) {
+  const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'dfsworldwide.info@gmail.com').toLowerCase();
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    const e = new Error('Unauthorized');
+    e.statusCode = 401;
+    throw e;
+  }
+
+  const supabaseAuth = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
+
+  const { data: userData, error: userErr } = await supabaseAuth.auth.getUser();
+  if (userErr || !userData?.user) {
+    const e = new Error(userErr?.message || 'Unauthorized');
+    e.statusCode = 401;
+    throw e;
+  }
+
+  const email = (userData.user.email || '').toLowerCase();
+  if (email !== ADMIN_EMAIL) {
+    const e = new Error('Forbidden');
+    e.statusCode = 403;
+    throw e;
+  }
+
+  return { token, user: userData.user };
+}
+
+async function handleAdminList(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  try {
+    await requireAdmin(req);
+    const supabase = getSupabaseAdminClient();
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+
+    const q = (req.query.q || '').toString().trim();
+    const limit = Math.min(500, Math.max(1, Number(req.query.limit || 50)));
+
+    let query = supabase
+      .from('payments')
+      .select('id, created_at, provider, payment_status, price_amount, price_currency, tracking_id, payment_id, order_id')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (q) {
+      const like = `%${q}%`;
+      query = query.or(`tracking_id.ilike.${like},provider.ilike.${like},payment_status.ilike.${like},payment_id.ilike.${like},order_id.ilike.${like}`);
+    }
+
+    const { data, error } = await query;
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ items: data || [] });
+  } catch (e) {
+    return res.status(e.statusCode || 500).json({ error: e?.message || 'Failed' });
+  }
+}
+
 async function handleCreate(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -574,6 +633,7 @@ export default async function handler(req, res) {
   const action = req.query._action;
 
   if (action === 'create') return handleCreate(req, res);
+  if (action === 'list') return handleAdminList(req, res);
   if (action === 'ipn') return handleIpn(req, res);
   if (action === 'stripe-create') return handleStripeCreate(req, res);
   if (action === 'stripe-status') return handleStripeStatus(req, res);

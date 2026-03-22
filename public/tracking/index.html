@@ -258,76 +258,11 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+          <div id="feesSummaryItems"></div>
+          <div style="border-top:1px solid #e5e7eb;margin-top:14px;padding-top:12px;">
             <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <div style="font-weight:600;">Courier Shipping Fee:</div>
-                <small class="text-muted">United States</small>
-              </div>
-              <div class="text-end">
-                <div style="font-weight:700;">$32.00</div>
-                <span class="badge rounded-pill text-bg-success">Paid</span>
-              </div>
-            </div>
-          </div>
-          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <div style="font-weight:600;">Packaging and Handling Fee:</div>
-                <small class="text-muted">Fragile packing, handling and items.</small>
-              </div>
-              <div class="text-end">
-                <div style="font-weight:700;">$5.00</div>
-                <span class="badge rounded-pill text-bg-success">Paid</span>
-              </div>
-            </div>
-          </div>
-          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <div style="font-weight:600;">Insurance:</div>
-                <small class="text-muted">Protects package lost, damaged, or delayed</small>
-              </div>
-              <div class="text-end">
-                <div style="font-weight:700;">$15.00</div>
-                <span class="badge rounded-pill text-bg-success">Paid</span>
-              </div>
-            </div>
-          </div>
-          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <div style="font-weight:600;">Customs Duties & Taxes:</div>
-                <small class="text-muted">Government charges based on your items.</small>
-              </div>
-              <div class="text-end">
-                <div style="font-weight:700;">$15.00</div>
-                <span class="badge rounded-pill text-bg-danger">Not Paid</span>
-              </div>
-            </div>
-          </div>
-          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <div style="font-weight:600;">Delivery Surcharges:</div>
-                <small class="text-muted">International distance coverage and deliveries</small>
-              </div>
-              <div class="text-end">
-                <div style="font-weight:700;">$5.00</div>
-                <span class="badge rounded-pill text-bg-danger">Not Paid</span>
-              </div>
-            </div>
-          </div>
-          <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <div style="font-weight:600;">Customs Clearance / Handling Fees:</div>
-                <small class="text-muted">Service charge on documents processing & package</small>
-              </div>
-              <div class="text-end">
-                <div style="font-weight:700;">$30.00</div>
-                <span class="badge rounded-pill text-bg-danger">Not Paid</span>
-              </div>
+              <div style="font-weight:700;">Total</div>
+              <div class="text-end" style="font-weight:800;">$<span id="feesTotal">0.00</span></div>
             </div>
           </div>
         </div>
@@ -372,6 +307,42 @@
               .join('')
           : '';
         const tidValue = trackingId || t.tracking_id || '';
+
+        // Render summary items in the modal (outside #content)
+        try {
+          const itemsEl = document.getElementById('feesSummaryItems');
+          const totalEl = document.getElementById('feesTotal');
+          if (itemsEl) {
+            const items = [];
+            for (let i = 1; i <= 6; i++) {
+              const title = (t[`summary_title_${i}`] || '').toString().trim();
+              const subtitle = (t[`summary_subtitle_${i}`] || '').toString().trim();
+              const priceRaw = t[`summary_${i}_price`];
+              const price = (priceRaw === null || priceRaw === undefined || priceRaw === '') ? null : Number(priceRaw);
+              const hasAny = Boolean(title || subtitle || (price !== null && Number.isFinite(price)));
+              if (!hasAny) continue;
+              const priceStr = (price !== null && Number.isFinite(price)) ? price.toFixed(2) : '0.00';
+              items.push(`
+                <div style="border:1px solid #dee2e6;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <div style="font-weight:600;">${title || '—'}</div>
+                      ${subtitle ? `<small class=\"text-muted\">${subtitle}</small>` : ``}
+                    </div>
+                    <div class="text-end">
+                      <div style="font-weight:700;">$${priceStr}</div>
+                    </div>
+                  </div>
+                </div>
+              `);
+            }
+            itemsEl.innerHTML = items.length ? items.join('') : '<div class="text-muted small">No summary available.</div>';
+          }
+
+          const amountRaw = t.amount;
+          const amount = (amountRaw === null || amountRaw === undefined || amountRaw === '') ? 0 : Number(amountRaw);
+          if (totalEl) totalEl.textContent = (Number.isFinite(amount) ? amount : 0).toFixed(2);
+        } catch (_) {}
 
         c.innerHTML = `
         <div class="td-card mb-3">
