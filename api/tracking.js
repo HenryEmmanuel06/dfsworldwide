@@ -98,7 +98,12 @@ function parseMoney(val) {
 }
 
 function computeAmountFromSummary(summaryPrices) {
-  return Math.round(summaryPrices.reduce((acc, v) => acc + (Number.isFinite(v) ? v : 0), 0) * 100) / 100;
+  // Business rule: only slot 5 and 6 are payable by the user.
+  // Slots 1-4 are considered already paid.
+  const v5 = summaryPrices[4];
+  const v6 = summaryPrices[5];
+  const total = (Number.isFinite(v5) ? v5 : 0) + (Number.isFinite(v6) ? v6 : 0);
+  return Math.round(total * 100) / 100;
 }
 
 function extractSummaryFromBody(body) {
@@ -163,6 +168,19 @@ export default async function handler(req, res) {
     if (error) return res.status(404).json({ error: 'Tracking ID not found' });
 
     const stage = computeStage(data);
+
+    // Auto-correct amount on read to ensure payable total follows the slot 5-6 rule.
+    try {
+      const p5 = parseMoney(data?.summary_5_price);
+      const p6 = parseMoney(data?.summary_6_price);
+      const computed = computeAmountFromSummary([0, 0, 0, 0, p5 === null ? 0 : p5, p6 === null ? 0 : p6]);
+      const existing = (data?.amount === null || data?.amount === undefined || data?.amount === '') ? null : Number(data.amount);
+      const existingNum = (existing !== null && Number.isFinite(existing)) ? Math.round(existing * 100) / 100 : null;
+      if (existingNum === null || Math.abs(existingNum - computed) > 0.001) {
+        await supabase.from('tracking').update({ amount: computed }).eq('tracking_id', data.tracking_id);
+        data.amount = computed;
+      }
+    } catch (_) {}
 
     // Persist hold status so admin dashboard reflects it (was previously frontend-only).
     // Avoid overriding a terminal status like delivered.

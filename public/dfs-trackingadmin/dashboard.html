@@ -440,7 +440,8 @@
 
     function computeTotalFromInputs(prefix){
       let total = 0;
-      for(let i=1;i<=6;i++){
+      // Business rule: only slot 5 and 6 are payable by the user.
+      for(let i=5;i<=6;i++){
         const el = document.getElementById(prefix + 'summary_' + i + '_price');
         const v = parseMoney(el ? el.value : null);
         if(v !== null) total += v;
