@@ -600,6 +600,15 @@
 
       // Enable/disable pay button
       updatePayButton();
+
+      // UX: clicking PayPal/Stripe should immediately start the flow.
+      if (selectedMethod === 'stripe' || selectedMethod === 'paypal') {
+        if (!amountLoaded) {
+          showAlert('Loading amount… please wait a moment.', 'warning');
+          return;
+        }
+        initiatePayment();
+      }
     }
 
     function handleCryptoChange() {
@@ -891,7 +900,10 @@
       if (btn) btn.disabled = false;
     }
 
+    let __paymentInitiating = false;
+
     async function initiatePayment() {
+      if (__paymentInitiating) return;
       if (!trackingId) {
         showAlert('Tracking ID is missing', 'danger');
         return;
@@ -912,6 +924,7 @@
       const payButton = document.getElementById('payButton');
       const paymentLoading = document.getElementById('paymentLoading');
       
+      __paymentInitiating = true;
       payButton.disabled = true;
       paymentLoading.style.display = 'block';
       document.getElementById('alertMessage').style.display = 'none';
@@ -1002,6 +1015,9 @@
           // Hide payment method selection
           document.querySelector('.payment-methods').style.display = 'none';
           document.getElementById('payButton').style.display = 'none';
+
+          // Allow future interactions (crypto flow does not navigate away)
+          __paymentInitiating = false;
           
         } else {
           console.error('Invalid response structure:', data);
@@ -1027,6 +1043,7 @@
         showAlert(error.message || 'Failed to create payment. Please try again.', 'danger');
         payButton.disabled = false;
         paymentLoading.style.display = 'none';
+        __paymentInitiating = false;
       }
     }
 
